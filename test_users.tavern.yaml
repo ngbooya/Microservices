@@ -1,0 +1,16 @@
+---
+
+test_name: Try to change the password for a user that does not exist
+stages:
+  - name: Find username and password
+    request:
+      url: http://localhost:5000/user
+      json:
+        number:
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 404
+      body:
+        error: user not found
