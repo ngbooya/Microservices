@@ -46,22 +46,43 @@ def test():
     if request.method=='POST':
         conn = get_db()
         cur = conn.cursor()
-        res = cur.execute("INSERT INTO articles VALUES( " + "NULL"+ ", 'Article1', 'Body text.', date('now'));")
+        res = cur.execute("INSERT INTO articles VALUES( " + "NULL"+ ", 'Article1', 'Body text.', datetime('now'));")
         conn.commit()
         res = cur.execute("select * from articles")
         data = res.fetchall()
         return jsonify(data), 201
 
-@app.route("/post", methods = ['GET','POST'])
+@app.route("/post", methods = ['POST'])
 def postArticle():
     if request.method=='POST':
         content = request.get_json()
         conn = get_db()
         cur = conn.cursor()
-        res = cur.execute("INSERT INTO articles VALUES( " + "NULL" + "," + "'" + content['title'] + "'" + "," + "'" + content['body'] + "'" + ", date('now'));")
+        if("title" in content and "body" in content):
+            res = cur.execute("INSERT INTO articles VALUES( " + "NULL" + "," + "'" + content['title'] + "'" + "," + "'" + content['body'] + "'" + ", datetime('now'));")
         conn.commit()
         print (content)
         return jsonify(content), 201
+
+
+@app.route("/post/<id>", methods = ['GET'])
+def getArticle(id):
+    if request.method=='GET':
+        cur = get_db().cursor()
+        res = cur.execute("SELECT * FROM articles WHERE  id =" + id + ";")
+        data = res.fetchall()
+        return jsonify(data), 200
+
+@app.route("/posts/recent/<int:number>", methods = ['GET'])
+def getRecentArticle(number):
+    if request.method=='GET':
+        cur = get_db().cursor()
+        res = cur.execute('''SELECT * FROM articles 
+                             ORDER BY date DESC
+                             LIMIT ''' + str(number) + ";")
+        data = res.fetchall()
+        return jsonify(data), 200
+        
 
  
 if __name__ == "__main__":
