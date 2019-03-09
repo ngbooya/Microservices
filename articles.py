@@ -15,10 +15,10 @@ app.config['SECRET_KEY'] = 'secret-key'
 if not os.path.exists(DATABASE):
     conn = sqlite3.connect(DATABASE)
     cur = conn.cursor()
-    #conn.execute("DROP TABLE IF EXISTS articles;")
-    #conn.commit()
-    conn.execute("CREATE TABLE articles (id INTEGER PRIMARY KEY, title TEXT, body TEXT, date DATETIME);")
+    conn.execute("PRAGMA foreign_keys = ON;")
     conn.commit()
+    conn.execute("CREATE TABLE articles (article_id INTEGER PRIMARY KEY, title TEXT, body TEXT, date DATETIME, user_id INTEGER REFERENCES users)")
+    cur.execute("CREATE TABLE users (user_id INTEGER PRIMARY KEY, email TEXT, password TEXT);")
     conn.commit()
     conn.close()
 
@@ -46,7 +46,7 @@ def test():
     if request.method=='POST':
         conn = get_db()
         cur = conn.cursor()
-        res = cur.execute("INSERT INTO articles VALUES( " + "NULL"+ ", 'Article1', 'Body text.', datetime('now'));")
+        res = cur.execute("INSERT INTO articles VALUES( " + "NULL"+ ", 'Article1', 'Body text.', datetime('now'), 1);")
         conn.commit()
         res = cur.execute("select * from articles")
         data = res.fetchall()
@@ -58,11 +58,12 @@ def postArticle():
         content = request.get_json()
         conn = get_db()
         cur = conn.cursor()
-        if("title" in content and "body" in content):
-            res = cur.execute("INSERT INTO articles VALUES( " + "NULL" + "," + "'" + content['title'] + "'" + "," + "'" + content['body'] + "'" + ", datetime('now'));")
+        if("title" in content and "body" in content and "user_id" in content):
+            cur.execute("INSERT INTO articles VALUES( " + "NULL" + "," + "'" + content['title'] + "'" + "," + "'" + content['body'] + "'" + ", datetime('now'), " + str(content['user_id']) + " );")
         conn.commit()
-        print (content)
-        return jsonify(content), 201
+        #print (content)
+        return jsonify({}), 201
+                
 
 
 @app.route("/post/<id>", methods = ['GET'])
@@ -77,12 +78,34 @@ def getArticle(id):
 def getRecentArticle(number):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute('''SELECT * FROM articles
+        res = cur.execute('''SELECT * FROM articles 
                              ORDER BY date DESC
                              LIMIT ''' + str(number) + ";")
         data = res.fetchall()
         return jsonify(data), 200
+    
+@app.route("/post/<id>", methods = ['DELETE'])
+def deleteArticle(id):
+    if request.method=='DELETE':
+        conn = get_db()
+        cur = get_db()
+        cur.execute("DELETE FROM articles WHERE id = " + id)
+        conn.commit()
+        return jsonify({}), 200 
 
+@app.route("/users/create", methods = ['POST'])
+def createUser():
+    if request.method == 'POST':
+        content = request.get_json()
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users VALUES( " + "NULL" + "," + "'" + content['email'] + "', " + "'" + content['password'] + "'"  + " );")
+        conn.commit()
+        show = cur.execute("SELECT * FROM users")
+        data = show.fetchall()
+        print(data)
+        conn.close()
+        return jsonify(data), 201
 
 
 if __name__ == "__main__":
