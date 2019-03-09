@@ -54,13 +54,36 @@ def createUser():
 		conn.commit()
 
 		show = cur.execute("SELECT * FROM users")
-		data = show.fetchone()
+		data = show.fetchall()
 		print(data)
-		data.update({"location":"http://locahost:5000/users"})
+		# data.update({"location":"http://locahost:5000/users"})
 		conn.close()
 		return jsonify(data),201
 
-@app.route("/users/delete", methods =['DELETE'])
+@app.route("/users/delete", methods =['GET','POST','DELETE'])
 def deleteUser():
 	if request.method == 'DELETE':
-		print("REMOVE")
+		conn = get_db()
+		cur = conn.cursor()
+		# cur.execute('SELECT * FROM users WHERE EXISTS(DELETE FROM users WHERE user_id = 1)')
+		cur.execute('DELETE FROM users WHERE user_id=1')
+		conn.commit()
+
+		show = cur.execute("SELECT * FROM users")
+		data = show.fetchall()
+		print(data)
+		conn.close()
+		return jsonify(data),201
+@app.route("/users/changepassword",methods=['GET','POST'])
+def changePassword():
+	conn = get_db()
+	cur = conn.cursor()
+	# cur.execute('SELECT * FROM users WHERE EXISTS(DELETE FROM users WHERE user_id = 1)')
+	cur.execute('UPDATE users SET password="thispasshasbeenchangedAGAIN" WHERE email="ngbooya@gmail.com" AND user_id=6')
+	conn.commit()
+
+	show = cur.execute("SELECT * FROM users")
+	data = show.fetchall()
+	print(data)
+	conn.close()
+	return jsonify(data),201
