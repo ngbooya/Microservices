@@ -15,8 +15,9 @@ if not os.path.exists(DATABASE):
     cur = conn.cursor()
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.commit()
+    conn.execute("CREATE TABLE users (user_id INTEGER PRIMARY KEY, email TEXT, password TEXT)")
     conn.execute("CREATE TABLE articles (article_id INTEGER PRIMARY KEY, title TEXT, body TEXT, date DATETIME, user_id INTEGER REFERENCES users)")
-    cur.execute("CREATE TABLE users (user_id INTEGER PRIMARY KEY, email TEXT, password TEXT);")
+    conn.execute("CREATE TABLE tags (tag_id INTEGER PRIMARY KEY, article_id INTEGER REFERENCES articles, tag TEXT)")
     conn.commit()
     conn.close()
 
@@ -32,6 +33,7 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
+###############################################################################ARTICLES#######################################################################################
 @app.route("/test", methods = ['GET','POST'])
 def test():
     if request.method=='GET':
@@ -48,7 +50,7 @@ def test():
         data = res.fetchall()
         return jsonify(data), 201
 
-@app.route("/post", methods = ['POST'])
+@app.route("/article/create", methods = ['POST'])
 def postArticle():
     if request.method=='POST':
         content = request.get_json()
@@ -62,7 +64,7 @@ def postArticle():
 
 
 
-@app.route("/post/<id>", methods = ['GET'])
+@app.route("/article/retrieve/<id>", methods = ['GET'])
 def getArticle(id):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -70,7 +72,7 @@ def getArticle(id):
         data = res.fetchall()
         return jsonify(data), 200
 
-@app.route("/posts/recent/<int:number>", methods = ['GET'])
+@app.route("/article/recent/<int:number>", methods = ['GET'])
 def getRecentArticle(number):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -80,7 +82,7 @@ def getRecentArticle(number):
         data = res.fetchall()
         return jsonify(data), 200
 
-@app.route("/post/<id>", methods = ['DELETE'])
+@app.route("/article/delete/<id>", methods = ['DELETE'])
 def deleteArticle(id):
     if request.method=='DELETE':
         conn = get_db()
@@ -135,6 +137,29 @@ def changePassword():
 	# print(data)
 	# conn.close()
 	# return jsonify(data),201
+###############################################################################TAGS#################################################################
+
+@app.route("/articles/<int:artNum>/tags/create",methods('POST'))
+def tagArticle(artNum):
+  if request.method=='POST':
+        content = request.get_json()
+        conn = get_db()
+        cur = conn.cursor()
+        if("article_id" in content and "tag" in content):
+            cur.execute("INSERT INTO tags VALUES( " + "NULL" + "," + "'" + content['article_id'] + "'" + "," + "'" + content['tag'] + "'" + ')')
+        conn.commit()
+        #print (content)
+        return jsonify({}), 201
+
+@app.route("/article/<int:artNum>/tags/<text:tag>/delete",methods('DELETE'))
+	def deleteTagFromArticle(artNum, tag):
+    if request.method == 'DELETE':
+				conn = get_db()
+        conn.execute("DELETE FROM articles WHERE article_id = " +artNum + " AND tag = "+ tag)
+        conn.commit()
+        return jsonify({}), 200
+
+
 
 
 if __name__ == "__main__":
