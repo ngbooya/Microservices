@@ -199,7 +199,6 @@ def postComment(article_number):
 def getRecentComments(article_number, numComments):
     if request.method=='GET':
         conn = get_db()
-        conn.row_factory = sqlite3.Row
         cur = get_db().cursor()
         res = cur.execute('''SELECT * FROM comments WHERE article_id=''' + "'" + str(article_number) + "'" +  '''ORDER BY date DESC LIMIT ''' + str(numComments) + ";")
         data = res.fetchall()
