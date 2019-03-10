@@ -53,20 +53,21 @@ def createUser():
         cur = conn.cursor()
         cur.execute("INSERT INTO users VALUES( " + "NULL" + "," + "'" + content['email'] + "', " + "'" + content['password'] + "'"  + " );")
         conn.commit()
-        show = cur.execute("SELECT * FROM users")
-        data = show.fetchall()
-        print(data)
+        #show = cur.execute("SELECT * FROM users")
+        #data = show.fetchall()
         conn.close()
-        return jsonify(data), 201
+        #return jsonify(data), 201
+        return jsonify({}), 201
 
-#CHAGE THE PASSWORD OF A USER
+#CHANGE THE PASSWORD OF A USER
 @app.route("/users/changepassword",methods=['POST'])
 def changePassword():
     content = request.get_json()
     conn = get_db()
     cur = conn.cursor()
-    cur.execute('UPDATE users SET password="' + content['password'] + '" WHERE user_id=' + content['user_id'] + ';')
-    conn.commit()
+    if("user_id" in content and "password" in content):
+        cur.execute('UPDATE users SET password="' + content['password'] + '" WHERE user_id=' + content['user_id'] + ';')
+        conn.commit()
     conn.close()
     return jsonify({}), 200
 
@@ -74,15 +75,12 @@ def changePassword():
 @app.route("/users/delete/<id>", methods =['DELETE'])
 def deleteUser(id):
     if request.method == 'DELETE':
-        content = request == ['DELETE']
         conn = get_db()
         cur = conn.cursor()
-	cur.execute('DELETE FROM users WHERE user_id=' + id)
-	conn.commit()
-	show = cur.execute("SELECT * FROM users")
-	data = show.fetchall()
-	conn.close()
-	return jsonify(data),201
+        cur.execute('DELETE FROM users WHERE user_id=' + id)
+        conn.commit()
+        conn.close()
+        return jsonify({}),200
   
 #APP RUN
 if __name__ == "__main__":
