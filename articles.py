@@ -108,6 +108,3 @@ def getRecentArticleMetaData(number):
                              LIMIT ''' + str(number) + ";")
         data = res.fetchall()
         return jsonify(data), 200
-    
-if __name__ == "__main__":
-    app.run()
