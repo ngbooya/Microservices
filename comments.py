@@ -48,7 +48,7 @@ def postComment(article_number):
         if("comment_text" in content and "article_id" in content):           
             conn = get_db()
             cur = conn.cursor()
-            cur.execute("INSERT INTO comments VALUES( NULL," + "'" + content['comment_text'] +  "'" + ", datetime('now'), " + "'" + content['article_id'] + "'" +  ")")
+            cur.execute("INSERT INTO comments VALUES( NULL," + "'" + content['comment_text'] +  "'" + ", datetime('now'), "  + content['article_id']  +  ")")
             conn.commit()
             cur.close()
             return jsonify({}), 200
@@ -80,6 +80,7 @@ def deleteComment(comment_id):
         cur = conn.cursor()
         cur.execute("DELETE FROM comments WHERE comment_id = " + str(comment_id))
         conn.commit()
-        return jsonify({}), 200        
+        return jsonify({}), 200  
+    
 if __name__ == "__main__":
     app.run()
