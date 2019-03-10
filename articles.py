@@ -20,6 +20,10 @@ if not os.path.exists(DATABASE):
     conn.execute("CREATE TABLE articles (article_id INTEGER PRIMARY KEY, title TEXT, body TEXT, date DATETIME, user_id INTEGER REFERENCES users)")
     cur.execute("CREATE TABLE users (user_id INTEGER PRIMARY KEY, email TEXT, password TEXT);")
     conn.commit()
+    cur.execute("CREATE TABLE comments (comment_id INTEGER PRIMARY KEY, comment_text TEXT, date DATETIME, article_id REFERENCES articles);")
+    conn.commit()
+    conn.execute("CREATE TABLE tags (tag_id INTEGER PRIMARY KEY, article_id INTEGER REFERENCES articles, tag TEXT)")
+    conn.commit()   
     conn.close()
 
 
@@ -36,23 +40,10 @@ def close_connection(exception):
         db.close()
 
 
-@app.route("/test", methods = ['GET','POST'])
-def test():
-    if request.method=='GET':
-        cur = get_db().cursor()
-        res = cur.execute("select * from articles")
-        data = res.fetchall()
-        return jsonify(data), 200
-    if request.method=='POST':
-        conn = get_db()
-        cur = conn.cursor()
-        res = cur.execute("INSERT INTO articles VALUES( " + "NULL"+ ", 'Article1', 'Body text.', datetime('now'), 1);")
-        conn.commit()
-        res = cur.execute("select * from articles")
-        data = res.fetchall()
-        return jsonify(data), 201
+#ARTICLES#
 
-@app.route("/post", methods = ['POST'])
+#POST AN ARTICLE
+@app.route("/article", methods = ['POST'])
 def postArticle():
     if request.method=='POST':
         content = request.get_json()
@@ -61,12 +52,10 @@ def postArticle():
         if("title" in content and "body" in content and "user_id" in content):
             cur.execute("INSERT INTO articles VALUES( " + "NULL" + "," + "'" + content['title'] + "'" + "," + "'" + content['body'] + "'" + ", datetime('now'), " + str(content['user_id']) + " );")
         conn.commit()
-        #print (content)
         return jsonify({}), 201
                 
-
-
-@app.route("/post/<id>", methods = ['GET'])
+#GET AN ARTICLE
+@app.route("/article/<id>", methods = ['GET'])
 def getArticle(id):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -74,7 +63,8 @@ def getArticle(id):
         data = res.fetchall()
         return jsonify(data), 200
 
-@app.route("/posts/recent/<int:number>", methods = ['GET'])
+#GET THE N MOST RECENT ARTICLES
+@app.route("/articles/recent/<int:number>", methods = ['GET'])
 def getRecentArticle(number):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -83,29 +73,16 @@ def getRecentArticle(number):
                              LIMIT ''' + str(number) + ";")
         data = res.fetchall()
         return jsonify(data), 200
-    
-@app.route("/post/<id>", methods = ['DELETE'])
+
+#DELETE AN ARTICLE  
+@app.route("/article/<id>", methods = ['DELETE'])
 def deleteArticle(id):
     if request.method=='DELETE':
         conn = get_db()
         cur = get_db()
         cur.execute("DELETE FROM articles WHERE id = " + id)
         conn.commit()
-        return jsonify({}), 200 
-
-@app.route("/users/create", methods = ['POST'])
-def createUser():
-    if request.method == 'POST':
-        content = request.get_json()
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("INSERT INTO users VALUES( " + "NULL" + "," + "'" + content['email'] + "', " + "'" + content['password'] + "'"  + " );")
-        conn.commit()
-        show = cur.execute("SELECT * FROM users")
-        data = show.fetchall()
-        print(data)
-        conn.close()
-        return jsonify(data), 201
+        return jsonify({}), 200
 
 
 if __name__ == "__main__":
