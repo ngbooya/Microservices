@@ -83,7 +83,27 @@ def deleteArticle(id):
         cur.execute("DELETE FROM articles WHERE id = " + id)
         conn.commit()
         return jsonify({}), 200
+        
+#UPDATE AN ARTICLE
+@app.route("/article/<id>/edit",methods=['POST'])
+def editArticle(id):
+    content = request.get_json()
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute('UPDATE articles SET title="' + content['title'] + '" WHERE article_id=' + id + ';')
+    cur.execute('UPDATE articles SET body="' + content['body'] + '" WHERE article_id=' + id + ';')
+    cur.execute("UPDATE articles SET date=datetime('now') WHERE article_id= " + id )
+    conn.commit()
+    conn.close()
+    return jsonify({}), 200
 
-
-if __name__ == "__main__":
-    app.run()
+#RETRIEVE METADATA FOR N MOST RECENT ARTICLES
+@app.route("/articles/recent/metadata/<int:number>", methods = ['GET'])
+def getRecentArticleMetaData(number):
+    if request.method=='GET':
+        cur = get_db().cursor()
+        res = cur.execute('''SELECT title, body, user_id, date, article_id FROM articles 
+                             ORDER BY date DESC
+                             LIMIT ''' + str(number) + ";")
+        data = res.fetchall()
+        return jsonify(data), 200
