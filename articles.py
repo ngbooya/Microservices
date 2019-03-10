@@ -59,7 +59,7 @@ def postArticle():
 def getArticle(id):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute("SELECT * FROM articles WHERE  id =" + id + ";")
+        res = cur.execute("SELECT * FROM articles WHERE  article_id =" + id + ";")
         data = res.fetchall()
         return jsonify(data), 200
 
@@ -80,7 +80,7 @@ def deleteArticle(id):
     if request.method=='DELETE':
         conn = get_db()
         cur = get_db()
-        cur.execute("DELETE FROM articles WHERE id = " + id)
+        cur.execute("DELETE FROM articles WHERE article_id = " + id)
         conn.commit()
         return jsonify({}), 200
         
@@ -90,10 +90,11 @@ def editArticle(id):
     content = request.get_json()
     conn = get_db()
     cur = conn.cursor()
-    cur.execute('UPDATE articles SET title="' + content['title'] + '" WHERE article_id=' + id + ';')
-    cur.execute('UPDATE articles SET body="' + content['body'] + '" WHERE article_id=' + id + ';')
-    cur.execute("UPDATE articles SET date=datetime('now') WHERE article_id= " + id )
-    conn.commit()
+    if("title" in content and "body" in content):
+        cur.execute('UPDATE articles SET title="' + content['title'] + '" WHERE article_id=' + id + ';')
+        cur.execute('UPDATE articles SET body="' + content['body'] + '" WHERE article_id=' + id + ';')
+        cur.execute("UPDATE articles SET date=datetime('now') WHERE article_id= " + id )
+        conn.commit()
     conn.close()
     return jsonify({}), 200
 
@@ -107,3 +108,6 @@ def getRecentArticleMetaData(number):
                              LIMIT ''' + str(number) + ";")
         data = res.fetchall()
         return jsonify(data), 200
+    
+if __name__ == "__main__":
+    app.run()
