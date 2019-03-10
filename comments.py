@@ -51,7 +51,7 @@ def postComment(article_number):
             cur.execute("INSERT INTO comments VALUES( NULL," + "'" + content['comment_text'] +  "'" + ", datetime('now'), "  + content['article_id']  +  ")")
             conn.commit()
             cur.close()
-            return jsonify({}), 200
+            return jsonify({}), 201
         return jsonify({}), 409
         
 #RETRIEVE THE N MOST RECENT COMMENTS TO AN ARTICLE       
@@ -59,7 +59,7 @@ def postComment(article_number):
 def getRecentComments(article_number, numComments):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute('''SELECT * FROM comments WHERE article_id=''' + "'" + str(article_number) + "'" +  '''ORDER BY date DESC LIMIT ''' + str(numComments) + ";")
+        res = cur.execute("SELECT * FROM comments WHERE article_id=" + str(article_number)  +  " ORDER BY date DESC LIMIT " + str(numComments))
         data = res.fetchall()
         return jsonify(data), 200
 
@@ -68,7 +68,7 @@ def getRecentComments(article_number, numComments):
 def countArticleComments(article_number):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute('SELECT article_id, COUNT(article_id) FROM comments GROUP BY article_id')
+        res = cur.execute('SELECT COUNT(article_id) FROM comments GROUP BY article_id')
         data = res.fetchall()
         return jsonify(data), 200
 
