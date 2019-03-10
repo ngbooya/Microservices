@@ -226,7 +226,7 @@ def deleteComment(comment_id):
 
 
 
-#TAGS#
+#TAG FUNCTIONS#
 
 #ADD TAG TO AN ARTICLE
 @app.route("/articles/<article_number>/tags/create", methods = ['POST'])
@@ -251,7 +251,7 @@ def getArticleTags(article_number):
         mergelist = []
         for list in res:
             mergelist += list            
-        return jsonify(mergelist), 201
+        return jsonify(mergelist), 200
 
 #DELETE TAG FROM AN ARTICLE
 @app.route("/article/<artNum>/tags/<tag>/delete", methods= ['DELETE'])
@@ -292,10 +292,11 @@ def getArticleListForTags(tag):
         mergelist = []
         for list in res:
             mergelist += list            
-        return jsonify(mergelist), 201
+        return jsonify(mergelist), 200
 
 
 #APP RUN
 if __name__ == "__main__":
     app.run()
+
 
