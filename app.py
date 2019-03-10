@@ -7,6 +7,7 @@ DATABASE = "./database.db"
 
 
 #INITIALIZATION#
+
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret-key'
@@ -57,6 +58,8 @@ def test():
         res = cur.execute("select * from articles")
         data = res.fetchall()
         return jsonify(data), 201
+
+
 
 
 #ARTICLES#
@@ -153,12 +156,24 @@ def changePassword():
     content = request.get_json()
     conn = get_db()
     cur = conn.cursor()
-    # cur.execute('SELECT * FROM users WHERE EXISTS(DELETE FROM users WHERE user_id = 1)')
-    cur.execute('UPDATE users SET password="' + str(content['password']) + '" WHERE user_id=' + str(content['user_id']) + ';')
-    #cur.execute('UPDATE users SET password="thispasshasbeenchangedAGAIN" WHERE user_id=3')
+    cur.execute('UPDATE users SET password="' + content['password'] + '" WHERE user_id=' + content['user_id'] + ';')
     conn.commit()
     conn.close()
     return jsonify({}), 200
+
+#DELETE A USER
+@app.route("/users/delete/<id>", methods =['DELETE'])
+def deleteUser(id):
+    if request.method == 'DELETE':
+        content = request == ['DELETE']
+        conn = get_db()
+        cur = conn.cursor()
+	cur.execute('DELETE FROM users WHERE user_id=' + id)
+	conn.commit()
+	show = cur.execute("SELECT * FROM users")
+	data = show.fetchall()
+	conn.close()
+	return jsonify(data),201
 
 
 
@@ -208,6 +223,9 @@ def deleteComment(comment_id):
         cur.execute("DELETE FROM comments WHERE comment_id = " + str(comment_id))
         conn.commit()
         return jsonify({}), 200
+
+
+
 
 #TAGS#
 
