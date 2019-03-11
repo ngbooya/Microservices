@@ -2,7 +2,7 @@ from flask import Flask, g, render_template, request
 import sqlite3, json
 from flask import jsonify
 import os
-
+from functools import wraps
 DATABASE = "./database.db"
 
 
@@ -11,6 +11,15 @@ DATABASE = "./database.db"
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret-key'
+
+def auth_required(f):
+	@wraps(f)
+	def decorated(*args, **kwargs):
+		auth = request.authorization
+		if auth and auth.username == 'username' and auth.password == 'password':
+			return f(*args,**kwargs)
+		return make_response('Could not verify your login!', 401, {'WWW-Authenicate':'Basic realm="Login Required"'})
+	return decorated
 
 
 if not os.path.exists(DATABASE):
@@ -24,7 +33,7 @@ if not os.path.exists(DATABASE):
     cur.execute("CREATE TABLE comments (comment_id INTEGER PRIMARY KEY, comment_text TEXT, date DATETIME, article_id REFERENCES articles);")
     conn.commit()
     conn.execute("CREATE TABLE tags (tag_id INTEGER PRIMARY KEY, article_id INTEGER REFERENCES articles, tag TEXT)")
-    conn.commit()   
+    conn.commit()
     conn.close()
 
 
@@ -44,6 +53,7 @@ def close_connection(exception):
 
 #TESTING#
 @app.route("/test", methods = ['GET','POST'])
+@auth_required
 def test():
     if request.method=='GET':
         cur = get_db().cursor()
@@ -66,6 +76,7 @@ def test():
 
 #POST AN ARTICLE
 @app.route("/article", methods = ['POST'])
+@auth_required
 def postArticle():
     if request.method=='POST':
         content = request.get_json()
@@ -75,9 +86,10 @@ def postArticle():
             cur.execute("INSERT INTO articles VALUES( " + "NULL" + "," + "'" + content['title'] + "'" + "," + "'" + content['body'] + "'" + ", datetime('now'), " + str(content['user_id']) + " );")
         conn.commit()
         return jsonify({}), 201
-                
+
 #GET AN ARTICLE
 @app.route("/article/<id>", methods = ['GET'])
+@auth_required
 def getArticle(id):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -87,17 +99,19 @@ def getArticle(id):
 
 #GET THE N MOST RECENT ARTICLES
 @app.route("/articles/recent/<int:number>", methods = ['GET'])
+@auth_required
 def getRecentArticle(number):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute('''SELECT * FROM articles 
+        res = cur.execute('''SELECT * FROM articles
                              ORDER BY date DESC
                              LIMIT ''' + str(number) + ";")
         data = res.fetchall()
         return jsonify(data), 200
 
-#DELETE AN ARTICLE  
+#DELETE AN ARTICLE
 @app.route("/article/<id>", methods = ['DELETE'])
+@auth_required
 def deleteArticle(id):
     if request.method=='DELETE':
         conn = get_db()
@@ -105,9 +119,10 @@ def deleteArticle(id):
         cur.execute("DELETE FROM articles WHERE article_id = " + id)
         conn.commit()
         return jsonify({}), 200
-        
+
 #UPDATE AN ARTICLE
 @app.route("/article/<id>/edit",methods=['POST'])
+@auth_required
 def editArticle(id):
     content = request.get_json()
     conn = get_db()
@@ -122,10 +137,11 @@ def editArticle(id):
 
 #RETRIEVE METADATA FOR N MOST RECENT ARTICLES
 @app.route("/articles/recent/metadata/<int:number>", methods = ['GET'])
+@auth_required
 def getRecentArticleMetaData(number):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute('''SELECT title, body, user_id, date, article_id FROM articles 
+        res = cur.execute('''SELECT title, body, user_id, date, article_id FROM articles
                              ORDER BY date DESC
                              LIMIT ''' + str(number) + ";")
         data = res.fetchall()
@@ -138,6 +154,7 @@ def getRecentArticleMetaData(number):
 
 #CREATE A USER
 @app.route("/users/create", methods = ['POST'])
+@auth_required
 def createUser():
     if request.method == 'POST':
         content = request.get_json()
@@ -153,6 +170,7 @@ def createUser():
 
 #CHANGE THE PASSWORD OF A USER
 @app.route("/users/changepassword",methods=['POST'])
+@auth_required
 def changePassword():
     content = request.get_json()
     conn = get_db()
@@ -165,6 +183,7 @@ def changePassword():
 
 #DELETE A USER
 @app.route("/users/delete/<id>", methods =['DELETE'])
+@auth_required
 def deleteUser(id):
     if request.method == 'DELETE':
         conn = get_db()
@@ -181,10 +200,11 @@ def deleteUser(id):
 
 #POST A COMMENT TO AN ARTICLE
 @app.route("/articles/<int:article_number>/comment/add", methods = ['POST'])
+@auth_required
 def postComment(article_number):
     if request.method=='POST':
         content = request.get_json()
-        if("comment_text" in content and "article_id" in content):           
+        if("comment_text" in content and "article_id" in content):
             conn = get_db()
             cur = conn.cursor()
             cur.execute("INSERT INTO comments VALUES( NULL," + "'" + content['comment_text'] +  "'" + ", datetime('now'), "  + content['article_id']  +  ")")
@@ -192,9 +212,10 @@ def postComment(article_number):
             cur.close()
             return jsonify({}), 201
         return jsonify({}), 409
-        
-#RETRIEVE THE N MOST RECENT COMMENTS TO AN ARTICLE       
+
+#RETRIEVE THE N MOST RECENT COMMENTS TO AN ARTICLE
 @app.route("/articles/<int:article_number>/comments/<int:numComments>", methods = ['GET'])
+@auth_required
 def getRecentComments(article_number, numComments):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -204,6 +225,7 @@ def getRecentComments(article_number, numComments):
 
 #COUNT THE NUMBER OF COMMENTS FOR A GIVEN ARTICLE
 @app.route("/articles/<int:article_number>/comments/count", methods = ['GET'])
+@auth_required
 def countArticleComments(article_number):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -213,13 +235,14 @@ def countArticleComments(article_number):
 
 #DELETE AN INDIVIDUAL COMMENT
 @app.route("/comments/<int:comment_id>", methods = ['DELETE'])
+@auth_required
 def deleteComment(comment_id):
     if request.method=='DELETE':
         conn = get_db()
         cur = conn.cursor()
         cur.execute("DELETE FROM comments WHERE comment_id = " + str(comment_id))
         conn.commit()
-        return jsonify({}), 200  
+        return jsonify({}), 200
 
 
 
@@ -228,18 +251,20 @@ def deleteComment(comment_id):
 
 #ADD TAG TO AN ARTICLE
 @app.route("/articles/<article_number>/tags/create", methods = ['POST'])
+@auth_required
 def tagArticle(article_number):
     if request.method=='POST':
         content = request.get_json()
         conn = get_db()
         cur = conn.cursor()
         if("tag" in content):
-            cur.execute("INSERT INTO tags VALUES( " + "NULL" + "," + "'" + str(article_number) + "'" + "," + "'" + content['tag'] + "'" + ')')
+            cur.execute("INSERT INTO tags VALUES( " + "NULL" + "," + "'" + str(article_number) + "'" + "," + "'" + content['tag'] + "'" + ')")
         conn.commit()
         return jsonify({}), 201
 
 #RETRIEVE TAGS FOR AN ARTICLE
 @app.route("/articles/<article_number>/tags", methods = ['GET'])
+@auth_required
 def getArticleTags(article_number):
     if request.method=='GET':
         conn = get_db()
@@ -248,18 +273,19 @@ def getArticleTags(article_number):
         res = cur.fetchall()
         mergelist = []
         for list in res:
-            mergelist += list            
+            mergelist += list
         return jsonify(mergelist), 200
 
 #DELETE TAG FROM AN ARTICLE
 @app.route("/article/<artNum>/tags/<tag>/delete", methods= ['DELETE'])
+@auth_required
 def deleteTagFromArticle(artNum, tag):
     if request.method == 'DELETE':
         conn = get_db()
         cur = conn.cursor()
         cur.execute("DELETE FROM tags WHERE article_id = '" + artNum + "' AND tag = '" + tag + "'")
         conn.commit()
-        return jsonify({}), 200 
+        return jsonify({}), 200
 
 #DELETE ONE OR MORE TAGS FROM AN ARTICLE
 # JSON IS IN THIS FORMAT:
@@ -268,19 +294,21 @@ def deleteTagFromArticle(artNum, tag):
 #     "tag2": ""
 # }
 @app.route("/article/<artNum>/tags/delete", methods= ['DELETE'])
+@auth_required
 def deleteTagsFromArticle(artNum):
     if request.method == 'DELETE':
         content = request.get_json()
         conn = get_db()
         cur = conn.cursor()
-        for key in content:            
-            value = content[key]        
+        for key in content:
+            value = content[key]
             cur.execute("DELETE FROM tags WHERE article_id = '" + artNum + "' AND tag = '" + value + "'")
         conn.commit()
-        return jsonify({}), 200 
+        return jsonify({}), 200
 
 #RETRIEVE A LIST OF ARTICLES WITH A GIVEN TAG
 @app.route("/tag/<tag>/allarticles", methods = ['GET'])
+@auth_required
 def getArticleListForTags(tag):
     if request.method=='GET':
         conn = get_db()
@@ -289,12 +317,10 @@ def getArticleListForTags(tag):
         res = cur.fetchall()
         mergelist = []
         for list in res:
-            mergelist += list            
+            mergelist += list
         return jsonify(mergelist), 200
 
 
 #APP RUN
 if __name__ == "__main__":
     app.run()
-
-
