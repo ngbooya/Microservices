@@ -2,7 +2,7 @@ from flask import Flask, g, render_template, request
 import sqlite3, json
 from flask import jsonify
 import os
-
+from functools import wraps
 DATABASE = "./database.db"
 
 
@@ -10,6 +10,16 @@ DATABASE = "./database.db"
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret-key'
+
+
+def auth_required(f):
+	@wraps(f)
+	def decorated(*args, **kwargs):
+		auth = request.authorization
+		if auth and auth.username == 'username' and auth.password == 'password':
+			return f(*args,**kwargs)
+		return make_response('Could not verify your login!', 401, {'WWW-Authenicate':'Basic realm="Login Required"'})
+	return decorated
 
 
 if not os.path.exists(DATABASE):
@@ -37,15 +47,16 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-        
+
 #COMMENT FUNCTIONS#
 
 #POST A COMMENT TO AN ARTICLE
 @app.route("/articles/<int:article_number>/comment/add", methods = ['POST'])
+@auth_required
 def postComment(article_number):
     if request.method=='POST':
         content = request.get_json()
-        if("comment_text" in content and "article_id" in content):           
+        if("comment_text" in content and "article_id" in content):
             conn = get_db()
             cur = conn.cursor()
             cur.execute("INSERT INTO comments VALUES( NULL," + "'" + content['comment_text'] +  "'" + ", datetime('now'), "  + content['article_id']  +  ")")
@@ -53,9 +64,10 @@ def postComment(article_number):
             cur.close()
             return jsonify({}), 201
         return jsonify({}), 409
-        
-#RETRIEVE THE N MOST RECENT COMMENTS TO AN ARTICLE       
+
+#RETRIEVE THE N MOST RECENT COMMENTS TO AN ARTICLE
 @app.route("/articles/<int:article_number>/comments/<int:numComments>", methods = ['GET'])
+@auth_required
 def getRecentComments(article_number, numComments):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -65,6 +77,7 @@ def getRecentComments(article_number, numComments):
 
 #COUNT THE NUMBER OF COMMENTS FOR A GIVEN ARTICLE
 @app.route("/articles/<int:article_number>/comments/count", methods = ['GET'])
+@auth_required
 def countArticleComments(article_number):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -74,13 +87,14 @@ def countArticleComments(article_number):
 
 #DELETE AN INDIVIDUAL COMMENT
 @app.route("/comments/<int:comment_id>", methods = ['DELETE'])
+@auth_required
 def deleteComment(comment_id):
     if request.method=='DELETE':
         conn = get_db()
         cur = conn.cursor()
         cur.execute("DELETE FROM comments WHERE comment_id = " + str(comment_id))
         conn.commit()
-        return jsonify({}), 200  
-    
+        return jsonify({}), 200
+
 if __name__ == "__main__":
     app.run()

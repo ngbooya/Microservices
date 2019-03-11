@@ -2,6 +2,7 @@ from flask import Flask, g, render_template, request
 import sqlite3, json
 from flask import jsonify
 import os
+from functools import wraps
 
 DATABASE = "./database.db"
 
@@ -10,6 +11,16 @@ DATABASE = "./database.db"
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret-key'
+
+
+def auth_required(f):
+	@wraps(f)
+	def decorated(*args, **kwargs):
+		auth = request.authorization
+		if auth and auth.username == 'username' and auth.password == 'password':
+			return f(*args,**kwargs)
+		return make_response('Could not verify your login!', 401, {'WWW-Authenicate':'Basic realm="Login Required"'})
+	return decorated
 
 
 if not os.path.exists(DATABASE):
@@ -23,7 +34,7 @@ if not os.path.exists(DATABASE):
     cur.execute("CREATE TABLE comments (comment_id INTEGER PRIMARY KEY, comment_text TEXT, date DATETIME, article_id REFERENCES articles);")
     conn.commit()
     conn.execute("CREATE TABLE tags (tag_id INTEGER PRIMARY KEY, article_id INTEGER REFERENCES articles, tag TEXT)")
-    conn.commit()   
+    conn.commit()
     conn.close()
 
 
@@ -44,6 +55,7 @@ def close_connection(exception):
 
 #POST AN ARTICLE
 @app.route("/article", methods = ['POST'])
+@auth_required
 def postArticle():
     if request.method=='POST':
         content = request.get_json()
@@ -53,9 +65,10 @@ def postArticle():
             cur.execute("INSERT INTO articles VALUES( " + "NULL" + "," + "'" + content['title'] + "'" + "," + "'" + content['body'] + "'" + ", datetime('now'), " + str(content['user_id']) + " );")
         conn.commit()
         return jsonify({}), 201
-                
+
 #GET AN ARTICLE
 @app.route("/article/<id>", methods = ['GET'])
+@auth_required
 def getArticle(id):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -65,17 +78,19 @@ def getArticle(id):
 
 #GET THE N MOST RECENT ARTICLES
 @app.route("/articles/recent/<int:number>", methods = ['GET'])
+@auth_required
 def getRecentArticle(number):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute('''SELECT * FROM articles 
+        res = cur.execute('''SELECT * FROM articles
                              ORDER BY date DESC
                              LIMIT ''' + str(number) + ";")
         data = res.fetchall()
         return jsonify(data), 200
 
-#DELETE AN ARTICLE  
+#DELETE AN ARTICLE
 @app.route("/article/<id>", methods = ['DELETE'])
+@auth_required
 def deleteArticle(id):
     if request.method=='DELETE':
         conn = get_db()
@@ -83,9 +98,10 @@ def deleteArticle(id):
         cur.execute("DELETE FROM articles WHERE article_id = " + id)
         conn.commit()
         return jsonify({}), 200
-        
+
 #UPDATE AN ARTICLE
 @app.route("/article/<id>/edit",methods=['POST'])
+@auth_required
 def editArticle(id):
     content = request.get_json()
     conn = get_db()
@@ -100,10 +116,11 @@ def editArticle(id):
 
 #RETRIEVE METADATA FOR N MOST RECENT ARTICLES
 @app.route("/articles/recent/metadata/<int:number>", methods = ['GET'])
+@auth_required
 def getRecentArticleMetaData(number):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute('''SELECT title, body, user_id, date, article_id FROM articles 
+        res = cur.execute('''SELECT title, body, user_id, date, article_id FROM articles
                              ORDER BY date DESC
                              LIMIT ''' + str(number) + ";")
         data = res.fetchall()

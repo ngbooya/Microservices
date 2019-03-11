@@ -2,7 +2,7 @@ from flask import Flask, g, render_template, request
 import sqlite3, json
 from flask import jsonify
 import os
-
+from functools import wraps
 DATABASE = "./database.db"
 
 
@@ -11,6 +11,16 @@ DATABASE = "./database.db"
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret-key'
+
+
+def auth_required(f):
+	@wraps(f)
+	def decorated(*args, **kwargs):
+		auth = request.authorization
+		if auth and auth.username == 'username' and auth.password == 'password':
+			return f(*args,**kwargs)
+		return make_response('Could not verify your login!', 401, {'WWW-Authenicate':'Basic realm="Login Required"'})
+	return decorated
 
 
 if not os.path.exists(DATABASE):
@@ -24,7 +34,7 @@ if not os.path.exists(DATABASE):
     cur.execute("CREATE TABLE comments (comment_id INTEGER PRIMARY KEY, comment_text TEXT, date DATETIME, article_id REFERENCES articles);")
     conn.commit()
     conn.execute("CREATE TABLE tags (tag_id INTEGER PRIMARY KEY, article_id INTEGER REFERENCES articles, tag TEXT)")
-    conn.commit()   
+    conn.commit()
     conn.close()
 
 
@@ -46,6 +56,7 @@ def close_connection(exception):
 
 #CREATE A USER
 @app.route("/users/create", methods = ['POST'])
+@auth_required
 def createUser():
     if request.method == 'POST':
         content = request.get_json()
@@ -61,6 +72,7 @@ def createUser():
 
 #CHANGE THE PASSWORD OF A USER
 @app.route("/users/changepassword",methods=['POST'])
+@auth_required
 def changePassword():
     content = request.get_json()
     conn = get_db()
@@ -73,6 +85,7 @@ def changePassword():
 
 #DELETE A USER
 @app.route("/users/delete/<id>", methods =['DELETE'])
+@auth_required
 def deleteUser(id):
     if request.method == 'DELETE':
         conn = get_db()
@@ -81,7 +94,7 @@ def deleteUser(id):
         conn.commit()
         conn.close()
         return jsonify({}),200
-  
+
 #APP RUN
 if __name__ == "__main__":
     app.run()
