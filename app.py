@@ -258,7 +258,7 @@ def tagArticle(article_number):
         conn = get_db()
         cur = conn.cursor()
         if("tag" in content):
-            cur.execute("INSERT INTO tags VALUES( " + "NULL" + "," + "'" + str(article_number) + "'" + "," + "'" + content['tag'] + "'" + ')")
+            cur.execute("INSERT INTO tags VALUES( " + "NULL" + "," + "'" + str(article_number) + "'" + "," + "'" + content['tag'] + "'" + ')')
         conn.commit()
         return jsonify({}), 201
 
