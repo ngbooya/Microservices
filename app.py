@@ -150,7 +150,6 @@ def getRecentArticleMetaData(number):
 
 #CREATE A USER
 @app.route("/users/create", methods = ['POST'])
-# @auth_required
 def createUser():
 	content = request.get_json()
 	try:
