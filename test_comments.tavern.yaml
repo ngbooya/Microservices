@@ -1,0 +1,30 @@
+---
+test_name: Add comment to an article
+stages:
+  - name: comment on article
+    request:
+      url: http://localhost:5000/articles/5/comment/add
+      json:
+        comment_text: This is a comment
+      method: POST
+      auth:
+        - username
+        - password
+      headers:
+        content-type: application/json
+    response:
+      status_code: 201
+---
+test_name: Return comments in order
+stages:
+  - name: Comments order
+    request:
+      url: http://localhost:5000/articles/5/comments/2
+      method: GET
+      auth:
+        - username
+        - password
+      headers:
+        content-type: application/json
+    response:
+      status_code: 200

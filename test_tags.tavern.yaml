@@ -1,0 +1,62 @@
+---
+test_name: Add an article with a new tag
+stages:
+  - name: New tag to article
+    request:
+      url: http://localhost:5000/articles/3/tags/create
+      json:
+        tag: <this is a tag>
+      method: POST
+      auth:
+        - username
+        - password
+      headers:
+        content-type: application/json
+    response:
+      status_code: 201
+---
+test_name: List all articles with the new tag
+stages:
+  - name: All articles with the new tag
+    request:
+      url: http://localhost:5000/articles/3/tags
+      method: GET
+      auth:
+        - username
+        - password
+      headers:
+        content-type: application/json
+    response:
+      status_code: 200
+---
+test_name: Add another tag to an article
+stages:
+  - name: New tag to article
+    request:
+      url: http://localhost:5000/articles/3/tags/create
+      json:
+        tag: <this is another tag>
+      method: POST
+      auth:
+        - username
+        - password
+      headers:
+        content-type: application/json
+    response:
+      status_code: 201
+---
+test_name: Delete one tag from an article
+stages:
+  - name: Delete tag
+    request:
+      url: http://localhost:5000/article/<artNum>/tags/4/delete
+      json:
+        article_id: 3
+      method: DELETE
+      auth:
+        - username
+        - password
+      headers:
+        content-type: application/json
+    response:
+      status_code: 200

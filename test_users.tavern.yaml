@@ -1,0 +1,46 @@
+---
+test_name: Make sure user creation is successful
+stages:
+  - name: Create a user
+    request:
+      url: http://localhost:5000/users/create
+      json:
+        email: johnsmith@gmail.com
+        password: PASSWORD
+      method: POST
+      headers:
+        content-type: application/json
+    response:
+      status_code: 201
+---
+test_name: Change user password
+stages:
+  - name: Change password given ID
+    request:
+      url: http://localhost:5000/users/changepassword/3
+      json:
+        password: DIFFERENTPASSWORD
+      method: POST
+      auth:
+        - username
+        - password
+      headers:
+        content-type: application/json
+    response:
+      status_code: 201
+---
+test_name: Delete user
+stages:
+  - name: Delete user
+    request:
+      url: http://localhost:5000/users/delete/3
+      json:
+        password: DIFFERENTPASSWORD
+      method: DELETE
+      auth:
+        - username
+        - password
+      headers:
+        content-type: application/json
+    response:
+      status_code: 200
