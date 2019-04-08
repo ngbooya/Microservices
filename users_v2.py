@@ -32,11 +32,6 @@ def requires_auth(f):
         auth = request.authorization
         if not auth or not check_auth(auth.username, auth.password):
             return authenticate()
-        else:
-            username = "admin"
-            password = "secret"
-            print(username)
-            print(password)
         return f(*args, **kwargs)
     return decorated
 
