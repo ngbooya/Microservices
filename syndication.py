@@ -26,10 +26,20 @@ def getFullFeed(number):
 	text2 = list(r.json())
 	articlePacket.append(text2)
 	r= requests.get('http://localhost:5004/articles/' + str(article_id) + '/comments/count')
-	text3 = list(r.json())
+	text3 = list(r.json())[0]
 	articlePacket.append(text3)
 	return jsonify(articlePacket), 200
 
+# GET COMMENT FEED
+@app.route("/syndication/comments/<int:article_id>")
+def getCommentFeed(article_id):
+	r= requests.get('http://localhost:5004/articles/' + str(article_id) + '/comments/count')
+	text = r.json()
+	print("test: " + str(text[0][0]))
+	commentCount = text[0][0]
+	r = requests.get('http://localhost:5004/articles/' + str(article_id) + '/comments/' + str(commentCount))
+	comments = list(r.json())
+	return jsonify(comments), 200
 
 if __name__ == "__main__":
     app.run()
