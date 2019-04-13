@@ -17,7 +17,7 @@ def check_auth(username, password):
     """This function is called to check if a username /
     password combination is valid.
     """
-    return username == 'admin' and password == 'secret'    
+    return username == 'admin' and password == 'secret'
 
 def authenticate():
     """Sends a 401 response that enables basic auth"""
@@ -46,7 +46,7 @@ if not os.path.exists(DATABASE):
     cur.execute("CREATE TABLE comments (comment_id INTEGER PRIMARY KEY, comment_text TEXT, date DATETIME, article_id REFERENCES articles);")
     conn.commit()
     conn.execute("CREATE TABLE tags (tag_id INTEGER PRIMARY KEY, article_id INTEGER REFERENCES articles, tag TEXT)")
-    conn.commit()   
+    conn.commit()
     conn.close()
 
 
@@ -109,7 +109,7 @@ def deleteUser(id):
 def authUser():
     return jsonify({}),200
 
-  
+
 #APP RUN
 if __name__ == "__main__":
     app.run()

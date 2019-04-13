@@ -34,7 +34,7 @@ def close_connection(exception):
     if db is not None:
         db.close()
 
-        
+
 #COMMENT FUNCTIONS#
 
 #POST A COMMENT TO AN ARTICLE
@@ -42,7 +42,7 @@ def close_connection(exception):
 def postComment(article_number):
     if request.method=='POST':
         content = request.get_json()
-        if("comment_text" in content and "article_id" in content):           
+        if("comment_text" in content and "article_id" in content):
             conn = get_db()
             cur = conn.cursor()
             cur.execute("INSERT INTO comments VALUES( NULL," + "'" + content['comment_text'] +  "'" + ", datetime('now'), "  + content['article_id']  +  ")")
@@ -50,8 +50,8 @@ def postComment(article_number):
             cur.close()
             return jsonify({}), 201
         return jsonify({}), 409
-        
-#RETRIEVE THE N MOST RECENT COMMENTS TO AN ARTICLE       
+
+#RETRIEVE THE N MOST RECENT COMMENTS TO AN ARTICLE
 @app.route("/articles/<int:article_number>/comments/<int:numComments>", methods = ['GET'])
 def getRecentComments(article_number, numComments):
     if request.method=='GET':
@@ -77,7 +77,7 @@ def deleteComment(comment_id):
         cur = conn.cursor()
         cur.execute("DELETE FROM comments WHERE comment_id = " + str(comment_id))
         conn.commit()
-        return jsonify({}), 200  
-    
+        return jsonify({}), 200
+
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5002)

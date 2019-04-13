@@ -18,7 +18,7 @@ if not os.path.exists(DATABASE):
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.commit()
     conn.execute("CREATE TABLE articles (article_id INTEGER PRIMARY KEY, title TEXT, body TEXT, date DATETIME, author TEXT)")
-    conn.commit()   
+    conn.commit()
     conn.close()
 
 
@@ -48,7 +48,7 @@ def postArticle():
             cur.execute("INSERT INTO articles VALUES( " + "NULL" + "," + "'" + content['title'] + "'" + "," + "'" + content['body'] + "'" + ", datetime('now'), '" + content['author'] + "' );")
         conn.commit()
         return jsonify({}), 201
-                
+
 #GET AN ARTICLE
 @app.route("/article/<id>", methods = ['GET'])
 def getArticle(id):
@@ -63,13 +63,13 @@ def getArticle(id):
 def getRecentArticle(number):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute('''SELECT * FROM articles 
+        res = cur.execute('''SELECT * FROM articles
                              ORDER BY date DESC
                              LIMIT ''' + str(number) + ";")
         data = res.fetchall()
         return jsonify(data), 200
 
-#DELETE AN ARTICLE  
+#DELETE AN ARTICLE
 @app.route("/article/<id>", methods = ['DELETE'])
 def deleteArticle(id):
     if request.method=='DELETE':
@@ -78,7 +78,7 @@ def deleteArticle(id):
         cur.execute("DELETE FROM articles WHERE article_id = " + id)
         conn.commit()
         return jsonify({}), 200
-        
+
 #UPDATE AN ARTICLE
 @app.route("/article/<id>/edit",methods=['POST'])
 def editArticle(id):
@@ -98,7 +98,7 @@ def editArticle(id):
 def getRecentArticleMetaData(number):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute('''SELECT title, body, author, date, article_id FROM articles 
+        res = cur.execute('''SELECT title, body, author, date, article_id FROM articles
                              ORDER BY date DESC
                              LIMIT ''' + str(number) + ";")
         data = res.fetchall()
@@ -120,4 +120,4 @@ def getRecentSummary(number):
     return jsonify(data2), 200
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5001)

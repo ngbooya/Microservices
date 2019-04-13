@@ -18,7 +18,7 @@ if not os.path.exists(DATABASE):
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.commit()
     conn.execute("CREATE TABLE tags (tag_id INTEGER PRIMARY KEY, article_id INTEGER REFERENCES articles, tag TEXT)")
-    conn.commit()   
+    conn.commit()
     conn.close()
 
 
@@ -33,7 +33,7 @@ def close_connection(exception):
     db = getattr(g, '_database', None)
     if db is not None:
         db.close()
-        
+
 #TAG FUNCTIONS#
 
 #ADD TAG TO AN ARTICLE
@@ -58,7 +58,7 @@ def getArticleTags(article_number):
         res = cur.fetchall()
         mergelist = []
         for list in res:
-            mergelist += list            
+            mergelist += list
         return jsonify(mergelist), 200
 
 #DELETE TAG FROM AN ARTICLE
@@ -69,7 +69,7 @@ def deleteTagFromArticle(artNum, tag):
         cur = conn.cursor()
         cur.execute("DELETE FROM tags WHERE article_id = '" + artNum + "' AND tag = '" + tag + "'")
         conn.commit()
-        return jsonify({}), 200 
+        return jsonify({}), 200
 
 #DELETE ONE OR MORE TAGS FROM AN ARTICLE
 # JSON IS IN THIS FORMAT:
@@ -83,11 +83,11 @@ def deleteTagsFromArticle(artNum):
         content = request.get_json()
         conn = get_db()
         cur = conn.cursor()
-        for key in content:            
-            value = content[key]        
+        for key in content:
+            value = content[key]
             cur.execute("DELETE FROM tags WHERE article_id = '" + artNum + "' AND tag = '" + value + "'")
         conn.commit()
-        return jsonify({}), 200 
+        return jsonify({}), 200
 
 #RETRIEVE A LIST OF ARTICLES WITH A GIVEN TAG
 @app.route("/tag/<tag>/allarticles", methods = ['GET'])
@@ -99,8 +99,8 @@ def getArticleListForTags(tag):
         res = cur.fetchall()
         mergelist = []
         for list in res:
-            mergelist += list            
+            mergelist += list
         return jsonify(mergelist), 200
 
 if __name__ == "__main__":
-    app.run()
+    app.run(port=5003)
