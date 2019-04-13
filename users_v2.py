@@ -4,7 +4,7 @@ from flask import jsonify
 from functools import wraps
 import os
 
-DATABASE = "./database.db"
+DATABASE = "./users.db"
 
 
 #INITIALIZATION#
@@ -13,11 +13,27 @@ app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret-key'
 
+
+#Auth code from: http://flask.pocoo.org/snippets/8/
+#AUTHORIZATION
 def check_auth(username, password):
     """This function is called to check if a username /
     password combination is valid.
     """
-    return username == 'admin' and password == 'secret'
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT (1) FROM users WHERE email='" + str(username) + "' AND password= '" + str(password) + "'")
+    Check = cur.fetchall()
+    #print(Check)
+    conn.commit()
+    conn.close()
+    String_Check = str(Check)
+    print(String_Check)
+    if(String_Check.find("1") != -1):
+        return True
+    else:
+        return False
+    #return username == 'admin' and password == 'secret'    
 
 def authenticate():
     """Sends a 401 response that enables basic auth"""
@@ -40,13 +56,8 @@ if not os.path.exists(DATABASE):
     cur = conn.cursor()
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.commit()
-    conn.execute("CREATE TABLE articles (article_id INTEGER PRIMARY KEY, title TEXT, body TEXT, date DATETIME, user_id INTEGER REFERENCES users)")
     cur.execute("CREATE TABLE users (user_id INTEGER PRIMARY KEY, email TEXT, password TEXT);")
-    conn.commit()
-    cur.execute("CREATE TABLE comments (comment_id INTEGER PRIMARY KEY, comment_text TEXT, date DATETIME, article_id REFERENCES articles);")
-    conn.commit()
-    conn.execute("CREATE TABLE tags (tag_id INTEGER PRIMARY KEY, article_id INTEGER REFERENCES articles, tag TEXT)")
-    conn.commit()
+    conn.commit()   
     conn.close()
 
 
@@ -104,12 +115,13 @@ def deleteUser(id):
         conn.close()
         return jsonify({}),200
 
+#AUTHENTICATION ROUTE
 @app.route("/user/auth")
 @requires_auth
 def authUser():
     return jsonify({}),200
 
-
+  
 #APP RUN
 if __name__ == "__main__":
     app.run()
