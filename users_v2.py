@@ -33,11 +33,7 @@ def check_auth(username, password):
         return True
     else:
         return False
-<<<<<<< HEAD
-    #return username == 'admin' and password == 'secret'
-=======
-    #return username == 'admin' and password == 'secret'    
->>>>>>> bf4ff0ee69fc8936cb99e7f670d1d4af5e1f5fcd
+    return username == 'admin' and password == 'secret'
 
 def authenticate():
     """Sends a 401 response that enables basic auth"""
@@ -61,11 +57,8 @@ if not os.path.exists(DATABASE):
     conn.execute("PRAGMA foreign_keys = ON;")
     conn.commit()
     cur.execute("CREATE TABLE users (user_id INTEGER PRIMARY KEY, email TEXT, password TEXT);")
-<<<<<<< HEAD
     conn.commit()
-=======
-    conn.commit()   
->>>>>>> bf4ff0ee69fc8936cb99e7f670d1d4af5e1f5fcd
+
     conn.close()
 
 
@@ -129,7 +122,7 @@ def deleteUser(id):
 def authUser():
     return jsonify({}),200
 
-  
+
 #APP RUN
 if __name__ == "__main__":
     app.run()
