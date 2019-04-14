@@ -103,4 +103,4 @@ def getArticleListForTags(tag):
         return jsonify(mergelist), 200
 
 if __name__ == "__main__":
-    app.run(port=5003)
+    app.run()
