@@ -38,7 +38,7 @@ def close_connection(exception):
 #ARTICLES#
 
 #POST AN ARTICLE
-@app.route("/articles", methods = ['POST'])
+@app.route("/articles/post", methods = ['POST'])
 def postArticle():
     if request.method=='POST':
         content = request.get_json()
@@ -50,7 +50,7 @@ def postArticle():
         return jsonify({}), 201
 
 #GET AN ARTICLE
-@app.route("/articles/<id>", methods = ['GET'])
+@app.route("/articles/article/<id>", methods = ['GET'])
 def getArticle(id):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -70,7 +70,7 @@ def getRecentArticle(number):
         return jsonify(data), 200
 
 #DELETE AN ARTICLE
-@app.route("/articles/<id>", methods = ['DELETE'])
+@app.route("/articles/delete/<id>", methods = ['DELETE'])
 def deleteArticle(id):
     if request.method=='DELETE':
         conn = get_db()
@@ -80,7 +80,7 @@ def deleteArticle(id):
         return jsonify({}), 200
 
 #UPDATE AN ARTICLE
-@app.route("/articles/<id>/edit",methods=['POST'])
+@app.route("/articles/edit/<id>",methods=['POST'])
 def editArticle(id):
     content = request.get_json()
     conn = get_db()
@@ -115,8 +115,8 @@ def getRecentSummary(number):
         data2.append(list(item))
     for i in range(len(data2)):
         data2[i][3] = "article/" + str(data2[i][3])
-        print(i)
-        print(data2[i][3])
+        #print(i)
+        #print(data2[i][3])
     return jsonify(data2), 200
 
 if __name__ == "__main__":

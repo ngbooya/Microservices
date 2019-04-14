@@ -1,4 +1,5 @@
 from flask import Flask, g, render_template, request, make_response, jsonify
+from requests.auth import HTTPBasicAuth
 import requests
 
 # Create app
@@ -9,23 +10,21 @@ app.config['SECRET_KEY'] = 'secret-key'
 # GET RSS SUMMARY
 @app.route("/syndication/summary")
 def getSummary():
-	r = requests.get('http://localhost:5001/articles/summary/10')
-	text = r.json()
-	return jsonify(text), 200
+	return jsonify(requests.get("http://localhost/articles/summary/10").json()), 200
 
 # GET FULL FEED
 @app.route("/syndication/full/<int:number>")
 def getFullFeed(number):
 	articlePacket = list()
-	r = requests.get('http://localhost:5001/article/' + str(number))
+	r = requests.get('http://localhost/articles/article/' + str(number))
 	text = list(r.json())[0]
 	article_id = text[0]
 	text.pop(0)
 	articlePacket.append(text)
-	r= requests.get('http://localhost:5003/articles/' + str(article_id) + '/tags')
+	r= requests.get('http://localhost/tags/article/' + str(article_id))
 	text2 = list(r.json())
 	articlePacket.append(text2)
-	r= requests.get('http://localhost:5004/articles/' + str(article_id) + '/comments/count')
+	r= requests.get('http://localhost/comments/article/count/' + str(article_id))
 	text3 = list(r.json())[0]
 	articlePacket.append(text3)
 	return jsonify(articlePacket), 200
@@ -33,13 +32,13 @@ def getFullFeed(number):
 # GET COMMENT FEED
 @app.route("/syndication/comments/<int:article_id>")
 def getCommentFeed(article_id):
-	r= requests.get('http://localhost:5004/articles/' + str(article_id) + '/comments/count')
+	r= requests.get('http://localhost/comments/article/count/' + str(article_id))
 	text = r.json()
-	print("test: " + str(text[0][0]))
 	commentCount = text[0][0]
-	r = requests.get('http://localhost:5004/articles/' + str(article_id) + '/comments/' + str(commentCount))
+	r = requests.get('http://localhost/comments/article_number/' + str(article_id) + '/recent/' + str(commentCount))
 	comments = list(r.json())
 	return jsonify(comments), 200
+
 
 if __name__ == "__main__":
     app.run()

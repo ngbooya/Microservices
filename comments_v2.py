@@ -38,7 +38,7 @@ def close_connection(exception):
 #COMMENT FUNCTIONS#
 
 #POST A COMMENT TO AN ARTICLE
-@app.route("/comments/article/<int:article_number>/add", methods = ['POST'])
+@app.route("/comments/article/post/<int:article_number>", methods = ['POST'])
 def postComment(article_number):
     if request.method=='POST':
         content = request.get_json()
@@ -52,7 +52,7 @@ def postComment(article_number):
         return jsonify({}), 409
 
 #RETRIEVE THE N MOST RECENT COMMENTS TO AN ARTICLE
-@app.route("/comments/article/<int:article_number>/recent/<int:numComments>", methods = ['GET'])
+@app.route("/comments/article_number/<int:article_number>/recent/<int:numComments>", methods = ['GET'])
 def getRecentComments(article_number, numComments):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -61,7 +61,7 @@ def getRecentComments(article_number, numComments):
         return jsonify(data), 200
 
 #COUNT THE NUMBER OF COMMENTS FOR A GIVEN ARTICLE
-@app.route("/comments/article/<int:article_number>/count", methods = ['GET'])
+@app.route("/comments/article/count/<int:article_number>", methods = ['GET'])
 def countArticleComments(article_number):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -70,7 +70,7 @@ def countArticleComments(article_number):
         return jsonify(data), 200
 
 #DELETE AN INDIVIDUAL COMMENT
-@app.route("/comments/<int:comment_id>", methods = ['DELETE'])
+@app.route("/comments/delete/<int:comment_id>", methods = ['DELETE'])
 def deleteComment(comment_id):
     if request.method=='DELETE':
         conn = get_db()
