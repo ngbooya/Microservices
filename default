@@ -38,6 +38,11 @@ upstream usersapp{
 	server 127.0.0.1:5301;
 	server 127.0.0.1:5302;
 }
+upstream syndicationapp{
+	server 127.0.0.1:5400;
+	server 127.0.0.1:5401;
+	server 127.0.0.1:5402;
+}
 server {
 	listen 80 default_server;
 	listen [::]:80 default_server;
@@ -68,27 +73,86 @@ server {
 	location / {
 		try_files $uri $uri/ =404;
 
-		auth_request     /auth;
-		location /users {
-			proxy_pass http://usersapp/users;
+		#USERS
+		location /users/create {
+			proxy_pass http://usersapp/users/create;
 		}
-		location /articles{
-			proxy_pass http://articlesapp/articles;
+		location /users/delete {
+			auth_request     /auth;
+			proxy_pass http://usersapp/users/delete;
 		}
-		location /comments{
-			proxy_pass http://commentsapp/comments;
+		location /users/changepassword {
+			auth_request     /auth;
+			proxy_pass http://usersapp/users/changepassword;
 		}
-		location /tags{
-			proxy_pass http://tagsapp/tags;
+
+		#ARTICLES
+		location /articles/post {
+			auth_request     /auth;
+			proxy_pass http://articlesapp/articles/post;
+		}
+		location /articles/recent {
+			proxy_pass http://articlesapp/articles/recent;
+		}
+		location /articles/delete {
+			auth_request     /auth;
+			proxy_pass http://articlesapp/articles/delete;
+		}
+		location /articles/edit {
+			auth_request     /auth;
+			proxy_pass http://articlesapp/articles/edit;
+		}
+		location /articles/article {
+			proxy_pass http://articlesapp/articles/article;
+		}
+		location /articles/summary {
+			proxy_pass http://articlesapp/articles/summary;
+		}
+				
+	
+		#COMMENTS
+		location /comments/article/count {
+			proxy_pass http://commentsapp/comments/article/count;
+		}
+		location /comments/delete {
+			auth_request	/auth;
+			proxy_pass http://commentsapp/comments/delete;
+		}
+		location /comments/article_number{
+			proxy_pass http://commentsapp/comments/article_number;
+		}
+		location /comments/article/post{
+			auth_request     /auth;
+			proxy_pass http://commentsapp/comments/article/post;
 		}
 
 
+		#TAGS
+		location /tags/delete {
+			auth_request     /auth;
+			proxy_pass http://tagsapp/tags/delete;
+		}
+		location /tags/allarticles {
+			proxy_pass http://tagsapp/tags/allarticles;
+		}
+		location /tags/article {
+			proxy_pass http://tagsapp/tags/article;
+		}
+		location /tags/add{
+			proxy_pass http://tagsapp/tags/add;
+		}
+
+
+		#SYNDICATION - DOESN'T REQUIRE AUTH
+		location /syndication {
+			proxy_pass http://syndicationapp/syndication;
+		}
 	}
 
 	#NEED TO CHECK AGAINST USERS DATABASE TO SEE IF USERNAME AND PASSWORD ARE CORRECT
 	location /auth{
 		internal;
-		proxy_pass 							 http://usersapp/users/auth;
+		proxy_pass 		http://usersapp/users/auth;
 		proxy_pass_request_body off;
 		proxy_set_header        Content-Length "";
 		proxy_set_header        X-Original-URI $request_uri;
