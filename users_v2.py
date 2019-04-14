@@ -33,7 +33,6 @@ def check_auth(username, password):
         return True
     else:
         return False
-    return username == 'admin' and password == 'secret'
 
 def authenticate():
     """Sends a 401 response that enables basic auth"""
@@ -58,7 +57,7 @@ if not os.path.exists(DATABASE):
     conn.commit()
     cur.execute("CREATE TABLE users (user_id INTEGER PRIMARY KEY, email TEXT, password TEXT);")
     conn.commit()
-
+    conn.commit()   
     conn.close()
 
 
@@ -117,12 +116,12 @@ def deleteUser(id):
         return jsonify({}),200
 
 #AUTHENTICATION ROUTE
-@app.route("/user/auth")
+@app.route("/users/auth")
 @requires_auth
 def authUser():
     return jsonify({}),200
 
-
+  
 #APP RUN
 if __name__ == "__main__":
     app.run()

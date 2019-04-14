@@ -38,7 +38,7 @@ def close_connection(exception):
 #ARTICLES#
 
 #POST AN ARTICLE
-@app.route("/article", methods = ['POST'])
+@app.route("/articles", methods = ['POST'])
 def postArticle():
     if request.method=='POST':
         content = request.get_json()
@@ -50,7 +50,7 @@ def postArticle():
         return jsonify({}), 201
 
 #GET AN ARTICLE
-@app.route("/article/<id>", methods = ['GET'])
+@app.route("/articles/<id>", methods = ['GET'])
 def getArticle(id):
     if request.method=='GET':
         cur = get_db().cursor()
@@ -70,7 +70,7 @@ def getRecentArticle(number):
         return jsonify(data), 200
 
 #DELETE AN ARTICLE
-@app.route("/article/<id>", methods = ['DELETE'])
+@app.route("/articles/<id>", methods = ['DELETE'])
 def deleteArticle(id):
     if request.method=='DELETE':
         conn = get_db()
@@ -80,7 +80,7 @@ def deleteArticle(id):
         return jsonify({}), 200
 
 #UPDATE AN ARTICLE
-@app.route("/article/<id>/edit",methods=['POST'])
+@app.route("/articles/<id>/edit",methods=['POST'])
 def editArticle(id):
     content = request.get_json()
     conn = get_db()

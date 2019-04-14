@@ -37,7 +37,7 @@ def close_connection(exception):
 #TAG FUNCTIONS#
 
 #ADD TAG TO AN ARTICLE
-@app.route("/articles/<article_number>/tags/create", methods = ['POST'])
+@app.route("/tags/article/<article_number>/create", methods = ['POST'])
 def tagArticle(article_number):
     if request.method=='POST':
         content = request.get_json()
@@ -49,7 +49,7 @@ def tagArticle(article_number):
         return jsonify({}), 201
 
 #RETRIEVE TAGS FOR AN ARTICLE
-@app.route("/articles/<article_number>/tags", methods = ['GET'])
+@app.route("/tags/article/<article_number>", methods = ['GET'])
 def getArticleTags(article_number):
     if request.method=='GET':
         conn = get_db()
@@ -62,7 +62,7 @@ def getArticleTags(article_number):
         return jsonify(mergelist), 200
 
 #DELETE TAG FROM AN ARTICLE
-@app.route("/article/<artNum>/tags/<tag>/delete", methods= ['DELETE'])
+@app.route("/tags/article/<artNum>/tag/<tag>/delete", methods= ['DELETE'])
 def deleteTagFromArticle(artNum, tag):
     if request.method == 'DELETE':
         conn = get_db()
@@ -77,7 +77,7 @@ def deleteTagFromArticle(artNum, tag):
 #     "tag1": ""
 #     "tag2": ""
 # }
-@app.route("/article/<artNum>/tags/delete", methods= ['DELETE'])
+@app.route("/tags/article/<artNum>/tag/delete", methods= ['DELETE'])
 def deleteTagsFromArticle(artNum):
     if request.method == 'DELETE':
         content = request.get_json()
@@ -90,7 +90,7 @@ def deleteTagsFromArticle(artNum):
         return jsonify({}), 200
 
 #RETRIEVE A LIST OF ARTICLES WITH A GIVEN TAG
-@app.route("/tag/<tag>/allarticles", methods = ['GET'])
+@app.route("/tags/<tag>/allarticles", methods = ['GET'])
 def getArticleListForTags(tag):
     if request.method=='GET':
         conn = get_db()

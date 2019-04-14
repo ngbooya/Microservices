@@ -18,6 +18,26 @@
 
 # Default server configuration
 #
+upstream articlesapp{
+	server 127.0.0.1:5000;
+	server 127.0.0.1:5001;
+	server 127.0.0.1:5002;
+}
+upstream commentsapp{
+	server 127.0.0.1:5100;
+	server 127.0.0.1:5101;
+	server 127.0.0.1:5102;
+}
+upstream tagsapp{
+	server 127.0.0.1:5200;
+	server 127.0.0.1:5201;
+	server 127.0.0.1:5202;
+}
+upstream usersapp{
+	server 127.0.0.1:5300;
+	server 127.0.0.1:5301;
+	server 127.0.0.1:5302;
+}
 server {
 	listen 80 default_server;
 	listen [::]:80 default_server;
@@ -45,33 +65,30 @@ server {
 
 	server_name _;
 
-	#auth_basic "Private Property";
-	#auth_basic_user_file /etc/nginx/.htpassw;
-
 	location / {
 		try_files $uri $uri/ =404;
 
 		auth_request     /auth;
-		#auth_request_set $auth_status $upstream_status;
+		location /users {
+			proxy_pass http://usersapp/users;
+		}
+		location /articles{
+			proxy_pass http://articlesapp/articles;
+		}
+		location /comments{
+			proxy_pass http://commentsapp/comments;
+		}
+		location /tags{
+			proxy_pass http://tagsapp/tags;
+		}
 
-		#auth_basic "Private Property";
-		#auth_basic_user_file /etc/nginx/.htpassw;
 
 	}
-	location /article {
-		try_files $uri $uri/ =404;
 
-		auth_request     /auth;
-		auth_request_set $auth_status $upstream_status;
-
-		#auth_basic "Private Property";
-		#auth_basic_user_file /etc/nginx/.htpassw;
-
-	}
 	#NEED TO CHECK AGAINST USERS DATABASE TO SEE IF USERNAME AND PASSWORD ARE CORRECT
 	location /auth{
 		internal;
-		proxy_pass              http://127.0.0.1:5000/user/auth;
+		proxy_pass 							 http://usersapp/users/auth;
 		proxy_pass_request_body off;
 		proxy_set_header        Content-Length "";
 		proxy_set_header        X-Original-URI $request_uri;
