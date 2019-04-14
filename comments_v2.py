@@ -65,9 +65,15 @@ def getRecentComments(article_number, numComments):
 def countArticleComments(article_number):
     if request.method=='GET':
         cur = get_db().cursor()
-        res = cur.execute('SELECT COUNT(article_id) FROM comments GROUP BY article_id')
+        res = cur.execute("SELECT * FROM comments WHERE article_id='" + str(article_number)  +  "' ORDER BY date DESC")
         data = res.fetchall()
-        return jsonify(data), 200
+        list_date = list(data)
+        number = len(list_date)
+        array_data = []
+        array_data.append(number)
+        outterarray=[]
+        outterarray.append(array_data)
+        return jsonify(outterarray), 200
 
 #DELETE AN INDIVIDUAL COMMENT
 @app.route("/comments/delete/<int:comment_id>", methods = ['DELETE'])
