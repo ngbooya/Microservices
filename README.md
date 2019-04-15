@@ -50,7 +50,7 @@ $ foreman start --formation Articles-Test=3,Comments-Test=3,Tags-Test=3,Users-Te
 ```
 
 
-- Note: Make sure the supplied default Nginx configuration file called ‘default’ is in the default Nginx location (on the test system this is: nginx is /etc/nginx/sites-enabled/default)
+- Note: Make sure the supplied default Nginx configuration file called ‘default’ is in the default Nginx location (on the test system this is: /etc/nginx/sites-enabled/default)
 
 
 ---
@@ -116,7 +116,7 @@ $ foreman start --formation Articles-Test=3,Comments-Test=3,Tags-Test=3,Users-Te
 
 ## Team
 
-| William Dalessi | Kevin Nguyen | Hector Bernal |
+| William Dalessi | Hector Bernal | Kevin Nguyen |
 | :---: |:---:| :---:|
 | Dev 1   | Dev 2 | Ops |
 | Refactoring Microservices | Creating a Backend for the Frontend | Foreman and Nginx |
