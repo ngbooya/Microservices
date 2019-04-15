@@ -16,11 +16,16 @@ def getSummary():
 @app.route("/syndication/full/<int:number>")
 def getFullFeed(number):
 	articlePacket = list()
-	r = requests.get('http://localhost/articles/article/' + str(number))
-	text = list(r.json())[0]
-	article_id = text[0]
-	text.pop(0)
-	articlePacket.append(text)
+	article_id = number
+	try:
+		r = requests.get('http://localhost/articles/article/' + str(number))
+		text = list(r.json())[0]
+		#article_id = text[0]
+		text.pop(0)
+		articlePacket.append(text)
+	except:
+		array_data = []
+		outterarray = []
 	r= requests.get('http://localhost/tags/article/' + str(article_id))
 	text2 = list(r.json())
 	articlePacket.append(text2)
