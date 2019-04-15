@@ -139,6 +139,7 @@ server {
 			proxy_pass http://tagsapp/tags/article;
 		}
 		location /tags/add{
+			auth_request	/auth;
 			proxy_pass http://tagsapp/tags/add;
 		}
 
