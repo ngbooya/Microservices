@@ -20,12 +20,11 @@ def getFullFeed(number):
 	try:
 		r = requests.get('http://localhost/articles/article/' + str(number))
 		text = list(r.json())[0]
-		#article_id = text[0]
 		text.pop(0)
 		articlePacket.append(text)
 	except:
 		array_data = []
-		outterarray = []
+		articlePacket.append(array_data)
 	r= requests.get('http://localhost/tags/article/' + str(article_id))
 	text2 = list(r.json())
 	articlePacket.append(text2)
