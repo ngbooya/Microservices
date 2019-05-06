@@ -1,0 +1,8 @@
+curl --header "Content-Type: application/json" --request POST --data '{"id":1, "email":"ngbooya@gmail.com","password":"mypassword"}' http://localhost/users/create
+
+curl --user kevin@gmail.com:changedpassword --header "Content-Type: application/json" --request POST --data '{"email":"kevin@gmail.com","password":"anotherpassword"}' http://localhost/users/changepassword
+
+curl -X DELETE --user duck@gmail.com:duckpassword http://localhost/users/delete/duck@gmail.com
+
+
+
