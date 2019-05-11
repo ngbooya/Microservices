@@ -1,6 +1,13 @@
 from flask import Flask, g, render_template, request, make_response, jsonify
 from requests.auth import HTTPBasicAuth
 import requests
+from httpcache import CachingHTTPAdapter
+import requests
+
+#This is for the caching with httpcache.
+s= requests.Session()
+s.mount('http://', CachingHTTPAdapter())
+s.mount('https://', CachingHTTPAdapter())
 
 # Create app
 app = Flask(__name__)
@@ -19,8 +26,9 @@ def getFullFeed(number):
 	article_id = number
 	try:
 		r = requests.get('http://localhost/articles/article/' + str(number))
-		text = list(r.json())[0]
-		text.pop(0)
+		text = r.json()
+		#text.pop(0)
+        #container.append(text)
 		articlePacket.append(text)
 	except:
 		array_data = []
