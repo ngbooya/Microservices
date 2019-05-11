@@ -96,7 +96,7 @@ def editArticle(id):
         print(time.article_timestamp)
 
         session.execute(
-            """UPDATE blog.article SET article_author=%s WHERE article_timestamp=%s""",(content['author'],[time.article_timestamp])
+            """UPDATE blog.article SET article_author=%s WHERE article_timestamp=%s AND article_id=%s""",(content['author'],time.article_timestamp,int(id))
         )
         return jsonify({}), 200
 
