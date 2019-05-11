@@ -4,5 +4,6 @@ curl --user kevin@gmail.com:changedpassword --header "Content-Type: application/
 
 curl -X DELETE --user duck@gmail.com:duckpassword http://localhost/users/delete/duck@gmail.com
 
+curl --user kevin@gmail.com:anotherpassword --header "Content-Type: application/json" --request POST --data '{"id":1, "title":"title","body":"body","author":"author"}' http://localhost/articles/post
 
-
+curl --user kevin@gmail.com:anotherpassword http://localhost/articles/recent/3

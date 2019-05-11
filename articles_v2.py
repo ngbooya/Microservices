@@ -1,7 +1,10 @@
 from flask import Flask, g, render_template, request
 import sqlite3, json
+from cassandra.cluster import Cluster
+from cassandra.query import named_tuple_factory
 from flask import jsonify
 import os
+import datetime
 
 DATABASE = "./articles.db"
 
@@ -11,28 +14,24 @@ app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret-key'
 
-
-if not os.path.exists(DATABASE):
-    conn = sqlite3.connect(DATABASE)
-    cur = conn.cursor()
-    conn.execute("PRAGMA foreign_keys = ON;")
-    conn.commit()
-    conn.execute("CREATE TABLE articles (article_id INTEGER PRIMARY KEY, title TEXT, body TEXT, date DATETIME, author TEXT)")
-    conn.commit()
-    conn.close()
+cluster = Cluster(['172.17.0.2'])
+session = cluster.connect()
 
 
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-    return db
 
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+session.execute("""USE blog;""")
+session.execute(
+    """CREATE TABLE IF NOT EXISTS article(
+        article_id int,
+        article_title text,
+        article_body text,
+        article_timestamp timestamp,
+        article_author text,
+        PRIMARY KEY(article_timestamp,article_id))
+
+    """
+ )
+
 
 
 #ARTICLES#
@@ -42,66 +41,76 @@ def close_connection(exception):
 def postArticle():
     if request.method=='POST':
         content = request.get_json()
-        conn = get_db()
-        cur = conn.cursor()
-        if("title" in content and "body" in content and "author" in content):
-            cur.execute("INSERT INTO articles VALUES( " + "NULL" + "," + "'" + content['title'] + "'" + "," + "'" + content['body'] + "'" + ", datetime('now'), '" + content['author'] + "' );")
-        conn.commit()
+        session.execute(
+            """INSERT INTO blog.article(article_id,article_title,article_body,article_timestamp,article_author) VALUES(%s,%s,%s,%s,%s)""", (content['id'],content['title'],content['body'],datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),content['author'])
+        )
         return jsonify({}), 201
 
 #GET AN ARTICLE
 @app.route("/articles/article/<id>", methods = ['GET'])
 def getArticle(id):
     if request.method=='GET':
-        cur = get_db().cursor()
-        res = cur.execute("SELECT * FROM articles WHERE  article_id =" + id + ";")
-        data = res.fetchall()
+        row = session.execute(
+            """SELECT * FROM blog.article WHERE article_id=%s""", ([int(id)])
+        )
+        data = row[0]
         return jsonify(data), 200
 
 #GET THE N MOST RECENT ARTICLES
 @app.route("/articles/recent/<int:number>", methods = ['GET'])
 def getRecentArticle(number):
     if request.method=='GET':
-        cur = get_db().cursor()
-        res = cur.execute('''SELECT * FROM articles
-                             ORDER BY date DESC
-                             LIMIT ''' + str(number) + ";")
-        data = res.fetchall()
+        rows = session.execute(
+            """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
+        )
+        print(datetime.datetime.now())
+        data = []
+        for row in rows:
+            data.append(row)
         return jsonify(data), 200
 
 #DELETE AN ARTICLE
 @app.route("/articles/delete/<id>", methods = ['DELETE'])
 def deleteArticle(id):
     if request.method=='DELETE':
-        conn = get_db()
-        cur = get_db()
-        cur.execute("DELETE FROM articles WHERE article_id = " + id)
-        conn.commit()
+        session.row_factory = named_tuple_factory
+        row = session.execute(
+            """SELECT article_timestamp FROM blog.article WHERE article_id=%s ALLOW FILTERING;""", ([int(id)])
+        )
+        time = row[0]
+        session.execute(
+            """DELETE FROM blog.article WHERE article_timestamp=%s""",([time.article_timestamp])
+        )
         return jsonify({}), 200
 
 #UPDATE AN ARTICLE
 @app.route("/articles/edit/<id>",methods=['POST'])
 def editArticle(id):
-    content = request.get_json()
-    conn = get_db()
-    cur = conn.cursor()
-    if("title" in content and "body" in content):
-        cur.execute('UPDATE articles SET title="' + content['title'] + '" WHERE article_id=' + id + ';')
-        cur.execute('UPDATE articles SET body="' + content['body'] + '" WHERE article_id=' + id + ';')
-        cur.execute("UPDATE articles SET date=datetime('now') WHERE article_id= " + id )
-        conn.commit()
-    conn.close()
-    return jsonify({}), 200
+    if request.method=='POST':
+        content = request.get_json()
+        session.row_factory = named_tuple_factory
+        row = session.execute(
+            """SELECT article_timestamp FROM blog.article WHERE article_id=%s ALLOW FILTERING;""", ([int(id)])
+        )
+        time = row[0]
+        print(time.article_timestamp)
+
+        session.execute(
+            """UPDATE blog.article SET article_author=%s WHERE article_timestamp=%s""",(content['author'],[time.article_timestamp])
+        )
+        return jsonify({}), 200
 
 #RETRIEVE METADATA FOR N MOST RECENT ARTICLES
 @app.route("/articles/recent/metadata/<int:number>", methods = ['GET'])
 def getRecentArticleMetaData(number):
     if request.method=='GET':
-        cur = get_db().cursor()
-        res = cur.execute('''SELECT title, body, author, date, article_id FROM articles
-                             ORDER BY date DESC
-                             LIMIT ''' + str(number) + ";")
-        data = res.fetchall()
+        rows = session.execute(
+            """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
+        )
+        print(datetime.datetime.now())
+        data = []
+        for row in rows:
+            data.append(row)
         return jsonify(data), 200
 
 #RSS SUMMARY - GETS TITLE, AUTHOR, DATE, AND URL
