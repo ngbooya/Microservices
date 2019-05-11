@@ -16,6 +16,9 @@
 # Please see /usr/share/doc/nginx-doc/examples/ for more detailed examples.
 ##
 
+#Cache Path
+proxy_cache_path /etc/nginx/cache keys_zone=mycache:5m;
+
 # Default server configuration
 #
 upstream articlesapp{
@@ -108,8 +111,8 @@ server {
 		location /articles/summary {
 			proxy_pass http://articlesapp/articles/summary;
 		}
-				
-	
+
+
 		#COMMENTS
 		location /comments/article/count {
 			proxy_pass http://commentsapp/comments/article/count;
@@ -152,6 +155,11 @@ server {
 
 	#NEED TO CHECK AGAINST USERS DATABASE TO SEE IF USERNAME AND PASSWORD ARE CORRECT
 	location /auth{
+        proxy_cache_key $http_Authorization;
+        proxy_cache_min_uses 1;
+        proxy_cache_methods GET POST HEAD;
+        proxy_cache mycache;
+        proxy_cache_valid any 5m;
 		internal;
 		proxy_pass 		http://usersapp/users/auth;
 		proxy_pass_request_body off;
