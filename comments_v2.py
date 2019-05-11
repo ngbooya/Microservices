@@ -2,37 +2,31 @@ from flask import Flask, g, render_template, request
 import sqlite3, json
 from flask import jsonify
 import os
+import datetime
+from cassandra.cluster import Cluster
+from cassandra.query import named_tuple_factory
 
 DATABASE = "./comments.db"
-
 
 # Create app
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret-key'
 
+cluster = Cluster(['172.17.0.2'])
+session = cluster.connect()
 
-if not os.path.exists(DATABASE):
-    conn = sqlite3.connect(DATABASE)
-    cur = conn.cursor()
-    conn.execute("PRAGMA foreign_keys = ON;")
-    conn.commit()
-    cur.execute("CREATE TABLE comments (comment_id INTEGER PRIMARY KEY, comment_text TEXT, date DATETIME, article_id REFERENCES articles);")
-    conn.commit()
-    conn.close()
-
-
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-    return db
-
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+session.execute("""USE blog;""")
+session.execute(
+    """CREATE TABLE IF NOT EXISTS comments(
+        comment_id int,
+        article_id int,
+        comment_text text,
+        comment_timestamp timestamp,
+        comment_author text,
+        PRIMARY KEY (comment_id))
+    """
+ )
 
 
 #COMMENT FUNCTIONS#
@@ -42,33 +36,34 @@ def close_connection(exception):
 def postComment(article_number):
     if request.method=='POST':
         content = request.get_json()
-        if("comment_text" in content):
-            conn = get_db()
-            cur = conn.cursor()
-            cur.execute("INSERT INTO comments VALUES( NULL," + "'" + content['comment_text'] +  "'" + ", datetime('now'), '"  + str(article_number)  +  "' )")
-            conn.commit()
-            cur.close()
-            return jsonify({}), 201
-        return jsonify({}), 409
+        session.execute(
+            """INSERT INTO blog.comments(comment_id,article_id,comment_text,comment_timestamp,comment_author) VALUES(%s,%s,%s,%s,%s)""", (content['comment_id'],article_number,content['comment_text'],datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),content['comment_author'])
+        )
+        return jsonify({}), 201
 
 #RETRIEVE THE N MOST RECENT COMMENTS TO AN ARTICLE
 @app.route("/comments/article_number/<int:article_number>/recent/<int:numComments>", methods = ['GET'])
 def getRecentComments(article_number, numComments):
     if request.method=='GET':
-        cur = get_db().cursor()
-        res = cur.execute("SELECT * FROM comments WHERE article_id='" + str(article_number)  +  "' ORDER BY date DESC LIMIT '" + str(numComments) + "'")
-        data = res.fetchall()
+        rows = session.execute(
+            """SELECT * FROM blog.comments WHERE comment_timestamp<%s AND article_id = %s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),article_number, numComments)
+        )
+        data = []
+        for row in rows:
+            data.append(row)
         return jsonify(data), 200
 
 #COUNT THE NUMBER OF COMMENTS FOR A GIVEN ARTICLE
 @app.route("/comments/article/count/<int:article_number>", methods = ['GET'])
 def countArticleComments(article_number):
     if request.method=='GET':
-        cur = get_db().cursor()
-        res = cur.execute("SELECT * FROM comments WHERE article_id='" + str(article_number)  +  "' ORDER BY date DESC")
-        data = res.fetchall()
-        list_date = list(data)
-        number = len(list_date)
+        rows = session.execute(
+            """SELECT * FROM blog.comments WHERE comment_timestamp<%s AND article_id = %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),article_number)
+        )
+        data = []
+        for row in rows:
+            data.append(row)
+        number = len(data)
         array_data = []
         array_data.append(number)
         outterarray=[]
@@ -79,10 +74,9 @@ def countArticleComments(article_number):
 @app.route("/comments/delete/<int:comment_id>", methods = ['DELETE'])
 def deleteComment(comment_id):
     if request.method=='DELETE':
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("DELETE FROM comments WHERE comment_id = " + str(comment_id))
-        conn.commit()
+        session.execute(
+            """DELETE FROM blog.comments WHERE comment_id=%s""",([comment_id])
+        )
         return jsonify({}), 200
 
 if __name__ == "__main__":
