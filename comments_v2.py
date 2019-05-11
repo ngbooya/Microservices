@@ -1,10 +1,11 @@
-from flask import Flask, g, render_template, request
+from flask import Flask, g, render_template, request, Response
 import sqlite3, json
 from flask import jsonify
 import os
 import datetime
 from cassandra.cluster import Cluster
 from cassandra.query import named_tuple_factory
+import werkzeug
 
 DATABASE = "./comments.db"
 
@@ -45,12 +46,37 @@ def postComment(article_number):
 @app.route("/comments/article_number/<int:article_number>/recent/<int:numComments>", methods = ['GET'])
 def getRecentComments(article_number, numComments):
     if request.method=='GET':
-        rows = session.execute(
-            """SELECT * FROM blog.comments WHERE comment_timestamp<%s AND article_id = %s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),article_number, numComments)
-        )
         data = []
-        for row in rows:
-            data.append(row)
+        if 'If-Modified-Since' in request.headers:
+            requestHeaderDate = request.headers.get('If-Modified-Since')
+            dateRequest = werkzeug.http.parse_date(requestHeaderDate)
+            rows = session.execute(
+                """SELECT * FROM blog.comments WHERE comment_timestamp<%s AND article_id = %s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),article_number, numComments)
+            )
+            data = []
+            returnNew = False
+            for row in rows:
+                data.append(row)
+                if datetime.datetime.strptime(str(row[4]), '%Y-%m-%d %H:%M:%S') > dateRequest:
+                    returnNew = True
+            if(returnNew):
+                resp = Response(jsonify(data), status=200, mimetype='application/json')
+                resp.headers['Last-Modified'] = str(werkzeug.http.http_date(datetime.datetime.now()))
+                #Have to return it this way since Response doesn't understand jsonify.
+                return (jsonify(data), resp.status_code, resp.headers.items())
+            else:
+                return (jsonify({}), 304)
+        else:
+            rows = session.execute(
+                """SELECT * FROM blog.comments WHERE comment_timestamp<%s AND article_id = %s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),article_number, numComments)
+            )
+            data = []
+            for row in rows:
+                data.append(row)
+            resp = Response(jsonify(data), status=200, mimetype='application/json')
+            resp.headers['Last-Modified'] = str(werkzeug.http.http_date(datetime.datetime.now()))
+            #Have to return it this way since Response doesn't understand jsonify.
+            return (jsonify(data), resp.status_code, resp.headers.items())
         return jsonify(data), 200
 
 #COUNT THE NUMBER OF COMMENTS FOR A GIVEN ARTICLE
