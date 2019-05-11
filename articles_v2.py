@@ -116,9 +116,6 @@ def getRecentArticleMetaData(number):
 #RSS SUMMARY - GETS TITLE, AUTHOR, DATE, AND URL
 @app.route("/articles/summary/<int:number>")
 def getRecentSummary(number):
-    # cur = get_db().cursor()
-    # res = cur.execute('''SELECT title, author, date, article_id FROM articles ORDER BY date DESC LIMIT ''' + str(number) + ";")
-    # data = res.fetchall()
     rows = session.execute(
         """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
     )
