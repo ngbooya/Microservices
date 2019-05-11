@@ -1,10 +1,11 @@
-from flask import Flask, g, render_template, request
+from flask import Flask, g, render_template, request, Response
 import sqlite3, json
 from cassandra.cluster import Cluster
 from cassandra.query import named_tuple_factory
 from flask import jsonify
 import os
 import datetime
+import werkzeug
 
 DATABASE = "./articles.db"
 
@@ -50,24 +51,59 @@ def postArticle():
 @app.route("/articles/article/<id>", methods = ['GET'])
 def getArticle(id):
     if request.method=='GET':
-        row = session.execute(
-            """SELECT * FROM blog.article WHERE article_id=%s""", ([int(id)])
-        )
-        data = row[0]
-        return jsonify(data), 200
+        if 'If-Modified-Since' in request.headers:
+            requestHeaderDate = request.headers.get('If-Modified-Since')
+            dateRequest = werkzeug.http.parse_date(requestHeaderDate)
+            row = session.execute(
+                """SELECT * FROM blog.article WHERE article_id=%s ALLOW FILTERING""", ([int(id)])
+            )
+            data = row[0]
+            comparisonDate = datetime.datetime.strptime(str(data[0]),'%Y-%m-%d %H:%M:%S')
+            if (comparisonDate > dateRequest):
+                resp = Response(jsonify(data), status=200, mimetype='application/json')
+                resp.headers['Last-Modified'] = str(werkzeug.http.http_date(datetime.datetime.now()))
+                return (jsonify(data), resp.status_code, resp.headers.items())
+            else:
+                return (jsonify({}), 304)
+        else:
+            row = session.execute(
+                """SELECT * FROM blog.article WHERE article_id=%s""", ([int(id)])
+            )
+            data = row[0]
+            return jsonify(data), 200
 
 #GET THE N MOST RECENT ARTICLES
 @app.route("/articles/recent/<int:number>", methods = ['GET'])
 def getRecentArticle(number):
     if request.method=='GET':
-        rows = session.execute(
-            """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
-        )
-        print(datetime.datetime.now())
-        data = []
-        for row in rows:
-            data.append(row)
-        return jsonify(data), 200
+        if 'If-Modified-Since' in request.headers:
+            requestHeaderDate = request.headers.get('If-Modified-Since')
+            dateRequest = werkzeug.http.parse_date(requestHeaderDate)
+            rows = session.execute(
+                """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
+            )
+            data = []
+            returnNew = False
+            for row in rows:
+                data.append(row)
+                if datetime.datetime.strptime(str(row[0]), '%Y-%m-%d %H:%M:%S') > dateRequest:
+                    returnNew = True
+            if(returnNew):
+                resp = Response(jsonify(data), status=200, mimetype='application/json')
+                resp.headers['Last-Modified'] = str(werkzeug.http.http_date(datetime.datetime.now()))
+                return (jsonify(data), resp.status_code, resp.headers.items())
+            else:
+                return (jsonify({}), 304)
+        else:             
+            rows = session.execute(
+                """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
+                )
+            data = []
+            for row in rows:
+                data.append(row)
+            resp = Response(jsonify(data), status=200, mimetype='application/json')
+            resp.headers['Last-Modified'] = str(werkzeug.http.http_date(datetime.datetime.now()))
+            return (jsonify(data), resp.status_code, resp.headers.items())
 
 #DELETE AN ARTICLE
 @app.route("/articles/delete/<id>", methods = ['DELETE'])
@@ -104,14 +140,33 @@ def editArticle(id):
 @app.route("/articles/recent/metadata/<int:number>", methods = ['GET'])
 def getRecentArticleMetaData(number):
     if request.method=='GET':
-        rows = session.execute(
-            """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
-        )
-        print(datetime.datetime.now())
-        data = []
-        for row in rows:
-            data.append(row)
-        return jsonify(data), 200
+        if 'If-Modified-Since' in request.headers:
+            requestHeaderDate = request.headers.get('If-Modified-Since')
+            dateRequest = werkzeug.http.parse_date(requestHeaderDate)   
+            rows = session.execute(
+                """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
+            )
+            data = []
+            returnNew = False
+            for row in rows:
+                data.append(row)
+                if datetime.datetime.strptime(str(row[0]), '%Y-%m-%d %H:%M:%S') > dateRequest:
+                    returnNew = True
+            if(returnNew):
+                resp = Response(jsonify(data), status=200, mimetype='application/json')
+                resp.headers['Last-Modified'] = str(werkzeug.http.http_date(datetime.datetime.now()))
+                #Have to return it this way since Response doesn't understand jsonify.
+                return (jsonify(data), resp.status_code, resp.headers.items())
+            else:
+                return (jsonify({}), 304)
+        else:
+            rows = session.execute(
+                """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
+            )
+            data = []
+            for row in rows:
+                data.append(row)
+            return jsonify(data), 200
 
 #RSS SUMMARY - GETS TITLE, AUTHOR, DATE, AND URL
 @app.route("/articles/summary/<int:number>")
@@ -119,20 +174,43 @@ def getRecentSummary(number):
     # cur = get_db().cursor()
     # res = cur.execute('''SELECT title, author, date, article_id FROM articles ORDER BY date DESC LIMIT ''' + str(number) + ";")
     # data = res.fetchall()
-    rows = session.execute(
-        """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
-    )
-    data = []
-    for row in rows:
-        data.append(row)
-    data2 = list()
-    for i, item in enumerate(data):
-        data2.append(list(item))
-    for i in range(len(data2)):
-        data2[i][3] = "article/" + str(data2[i][3])
-        #print(i)
-        #print(data2[i][3])
-    return jsonify(data2), 200
+    if 'If-Modified-Since' in request.headers:
+        requestHeaderDate = request.headers.get('If-Modified-Since')
+        dateRequest = werkzeug.http.parse_date(requestHeaderDate) 
+        rows = session.execute(
+            """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
+        )
+        data = []
+        returnNew = False
+        for row in rows:
+            data.append(row)
+            if datetime.datetime.strptime(str(row[0]), '%Y-%m-%d %H:%M:%S') > dateRequest:
+                returnNew = True
+        data2 = list()
+        for i, item in enumerate(data):
+            data2.append(list(item))
+        for i in range(len(data2)):
+            data2[i][3] = "article/" + str(data2[i][3])
+        if(returnNew):
+            resp = Response(jsonify(data2), status=200, mimetype='application/json')
+            resp.headers['Last-Modified'] = str(werkzeug.http.http_date(datetime.datetime.now()))
+            #Have to return it this way since Response doesn't understand jsonify.
+            return (jsonify(data2), resp.status_code, resp.headers.items())
+        else:
+            return (jsonify({}), 304)
+    else:
+        rows = session.execute(
+            """SELECT * FROM blog.article WHERE article_timestamp<%s LIMIT %s ALLOW FILTERING;""",(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),number)
+        )
+        data = []
+        for row in rows:
+            data.append(row)
+        data2 = list()
+        for i, item in enumerate(data):
+            data2.append(list(item))
+        for i in range(len(data2)):
+            data2[i][3] = "article/" + str(data2[i][3])
+        return jsonify(data2), 200
 
 if __name__ == "__main__":
     app.run()
