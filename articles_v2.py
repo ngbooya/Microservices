@@ -67,7 +67,7 @@ def getArticle(id):
                 return (jsonify({}), 304)
         else:
             row = session.execute(
-                """SELECT * FROM blog.article WHERE article_id=%s""", ([int(id)])
+                """SELECT * FROM blog.article WHERE article_id=%s ALLOW FILTERING""", ([int(id)])
             )
             data = row[0]
             return jsonify(data), 200
