@@ -134,7 +134,7 @@ $ foreman start --formation Articles-Test=3,Comments-Test=3,Tags-Test=3,Users-Te
 
 | William Dalessi | Hector Bernal | Kevin Nguyen |
 | :---: |:---:| :---:|
-| Ops  | Dev 1| Dev 2|
+| Ops  | Dev 2| Dev 1|
 
 ---
 
