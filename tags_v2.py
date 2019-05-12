@@ -69,17 +69,16 @@ def getArticleTags(article_number):
 @app.route("/tags/delete/article/<artNum>/tags", methods= ['DELETE'])
 def deleteTagsFromArticle(artNum):
     if request.method == 'DELETE':
+        data = []
         content = request.get_json()
-        # conn = get_db()
-        # cur = conn.cursor()
-        print(jsonify(content))
-            # cur.execute("DELETE FROM tags WHERE article_id = '" + artNum + "' AND tag = '" + value + "'")
-            # session.execute(
-            #     """SELECT tag_id FROM blog.tag WHERE tag_name=%s""",([value])
-            # )
-        # conn.commit()
-
-        return jsonify({}), 200
+        for key in content:
+            value = content[key]
+            rows = session.execute(
+                """SELECT tag_id FROM blog.tag WHERE tag_name=%s ALLOW FILTERING""",([value])
+            )
+            for row in rows:
+                data.append(row)
+    return jsonify(data), 200
 
 #RETRIEVE A LIST OF ARTICLES WITH A GIVEN TAG
 @app.route("/tags/allarticles/<tag>", methods = ['GET'])
