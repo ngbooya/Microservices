@@ -1,5 +1,6 @@
 from flask import Flask, g, render_template, request
 import sqlite3, json
+from cassandra.cluster import Cluster
 from flask import jsonify
 import os
 
@@ -11,28 +12,17 @@ app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SECRET_KEY'] = 'secret-key'
 
-
-if not os.path.exists(DATABASE):
-    conn = sqlite3.connect(DATABASE)
-    cur = conn.cursor()
-    conn.execute("PRAGMA foreign_keys = ON;")
-    conn.commit()
-    conn.execute("CREATE TABLE tags (tag_id INTEGER PRIMARY KEY, article_id INTEGER REFERENCES articles, tag TEXT)")
-    conn.commit()
-    conn.close()
-
-
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(DATABASE)
-    return db
-
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+cluster = Cluster(['172.17.0.2'])
+session = cluster.connect()
+session.execute("""USE blog;""")
+session.execute(
+        """CREATE TABLE IF NOT EXISTS tag(
+            tag_id int,
+            article_id int,
+            tag_name text,
+            PRIMARY KEY(tag_id, article_id)
+        );"""
+)
 
 #TAG FUNCTIONS#
 
@@ -41,35 +31,34 @@ def close_connection(exception):
 def tagArticle(article_number):
     if request.method=='POST':
         content = request.get_json()
-        conn = get_db()
-        cur = conn.cursor()
-        if("tag" in content):
-            cur.execute("INSERT INTO tags VALUES( " + "NULL" + "," + "'" + str(article_number) + "'" + "," + "'" + content['tag'] + "'" + ')')
-        conn.commit()
+        session.execute(
+            """INSERT INTO blog.tag(tag_id,article_id,tag_name) VALUES(%s,%s,%s)""", (content['tag_id'],int(article_number),content['tag'])
+        )
         return jsonify({}), 201
 
 #RETRIEVE TAGS FOR AN ARTICLE
 @app.route("/tags/article/<article_number>", methods = ['GET'])
 def getArticleTags(article_number):
     if request.method=='GET':
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("SELECT tag FROM tags WHERE  article_id =" + article_number + ";")
-        res = cur.fetchall()
+        rows = session.execute(
+            """SELECT tag_name FROM blog.tag WHERE article_id=%s ALLOW FILTERING""",([int(article_number)])
+        )
+
         mergelist = []
-        for list in res:
-            mergelist += list
+        for row in rows:
+            mergelist.append(row)
+
         return jsonify(mergelist), 200
 
 #DELETE TAG FROM AN ARTICLE
-@app.route("/tags/delete/article/<artNum>/tag", methods= ['DELETE'])
-def deleteTagFromArticle(artNum, tag):
-    if request.method == 'DELETE':
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("DELETE FROM tags WHERE article_id = '" + artNum + "' AND tag = '" + tag + "'")
-        conn.commit()
-        return jsonify({}), 200
+# @app.route("/tags/delete/article/<artNum>/<tag>", methods= ['DELETE'])
+# def deleteTagFromArticle(artNum, tag):
+#     if request.method == 'DELETE':
+#         session.execute(
+#             """DELETE FROM blog.tag WHERE tag_id=%s AND article_id=%s ALLOW FILTERING""", (int(tag),int(artNum))
+#         )
+#
+#         return jsonify({}), 200
 
 #DELETE ONE OR MORE TAGS FROM AN ARTICLE
 # JSON IS IN THIS FORMAT:
@@ -81,25 +70,27 @@ def deleteTagFromArticle(artNum, tag):
 def deleteTagsFromArticle(artNum):
     if request.method == 'DELETE':
         content = request.get_json()
-        conn = get_db()
-        cur = conn.cursor()
-        for key in content:
-            value = content[key]
-            cur.execute("DELETE FROM tags WHERE article_id = '" + artNum + "' AND tag = '" + value + "'")
-        conn.commit()
+        # conn = get_db()
+        # cur = conn.cursor()
+        print(jsonify(content))
+            # cur.execute("DELETE FROM tags WHERE article_id = '" + artNum + "' AND tag = '" + value + "'")
+            # session.execute(
+            #     """SELECT tag_id FROM blog.tag WHERE tag_name=%s""",([value])
+            # )
+        # conn.commit()
+
         return jsonify({}), 200
 
 #RETRIEVE A LIST OF ARTICLES WITH A GIVEN TAG
 @app.route("/tags/allarticles/<tag>", methods = ['GET'])
 def getArticleListForTags(tag):
     if request.method=='GET':
-        conn = get_db()
-        cur = conn.cursor()
-        cur.execute("SELECT article_id FROM tags WHERE  tag = '" + tag + "';")
-        res = cur.fetchall()
+        rows = session.execute(
+            """SELECT article_id FROM blog.tag WHERE tag_id=%s""",([int(tag)])
+        )
         mergelist = []
-        for list in res:
-            mergelist += list
+        for row in rows:
+            mergelist.append(row)
         return jsonify(mergelist), 200
 
 if __name__ == "__main__":

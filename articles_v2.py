@@ -212,4 +212,4 @@ def getRecentSummary(number):
         return jsonify(data2), 200
 
 if __name__ == "__main__":
-app.run()
+    app.run()
