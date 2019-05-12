@@ -28,8 +28,20 @@
 
 - `sudo pip3 install Flask-BasicAuth`
 
+- `sudo pip3 install httpcache`
+
 
 ---
+
+##First Actions
+- Create a cache folder "cache" at this location: /etc/nginx/cache/
+- Go to the directory /etc/nginx/ and then use this command: mkdir cache
+- You may need to run the commands as sudo.
+- Also change out the default nginx configuration in sites-enabled to the included one.
+- Install scylla DB and start it as in the project documents.
+- Run this command: docker exec -it scylla cqlsh
+- Run this cqlsh command: CREATE KEYSPACE blog WITH replication = {'class':'SimpleStrategy', 'replication_factor':'3'};
+
 
 
 ## Setup
@@ -66,6 +78,7 @@ $ foreman start --formation Articles-Test=3,Comments-Test=3,Tags-Test=3,Users-Te
 
 ```javascript
 {
+    “id”: id,
     “email”: “email”,
     “password”: “password”
 }
@@ -79,6 +92,7 @@ $ foreman start --formation Articles-Test=3,Comments-Test=3,Tags-Test=3,Users-Te
 
 ```javascript
 {
+
     “title”: “title”,
     “body”: “body”,
     “author”: “author”
@@ -93,6 +107,7 @@ $ foreman start --formation Articles-Test=3,Comments-Test=3,Tags-Test=3,Users-Te
 
 ```javascript
 {
+    "comment_id": number,
     “comment_text”: “comment”
 }
 ```
@@ -106,6 +121,7 @@ $ foreman start --formation Articles-Test=3,Comments-Test=3,Tags-Test=3,Users-Te
 
 ```javascript
 {
+    "tag_id":number,
     “tag”: “tag”
 }
 ```
@@ -118,9 +134,7 @@ $ foreman start --formation Articles-Test=3,Comments-Test=3,Tags-Test=3,Users-Te
 
 | William Dalessi | Hector Bernal | Kevin Nguyen |
 | :---: |:---:| :---:|
-| Dev 1   | Dev 2 | Ops |
-| Refactoring Microservices | Creating a Backend for the Frontend | Foreman and Nginx |
-
+| Ops  | Dev 1| Dev 2|
 
 ---
 
