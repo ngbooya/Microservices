@@ -70,6 +70,7 @@ def getArticleTags(article_number):
 def deleteTagsFromArticle(artNum):
     if request.method == 'DELETE':
         data = []
+        actual_data = []
         content = request.get_json()
         for key in content:
             value = content[key]
@@ -78,7 +79,11 @@ def deleteTagsFromArticle(artNum):
             )
             for row in rows:
                 data.append(row)
-    return jsonify(data), 200
+            for i in range(0, len(data)):
+                session.execute(
+                    """DELETE from blog.tag WHERE tag_id=%s""",([int(data[i][0])])
+                )
+    return jsonify({}), 200
 
 #RETRIEVE A LIST OF ARTICLES WITH A GIVEN TAG
 @app.route("/tags/allarticles/<tag>", methods = ['GET'])
